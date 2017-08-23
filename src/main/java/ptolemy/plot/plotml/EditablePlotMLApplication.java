@@ -31,68 +31,69 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot.plotml;
 
-import java.awt.Event;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-
-import javax.swing.JComponent;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.KeyStroke;
-import javax.swing.SwingUtilities;
-
 import ptolemy.gui.ComponentDialog;
 import ptolemy.gui.Query;
 import ptolemy.plot.EditablePlot;
 import ptolemy.plot.PlotBox;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// EditablePlotMLApplication
 
 /**
-   An application that can plot data in PlotML format from a URL or
-   from files specified on the command line, and can then permit the
-   user to edit the plot.
-   To compile and run this application, do the following:
-   <pre>
-   javac -classpath ../../.. EditablePlotMLApplication.java
-   java -classpath ../../.. ptolemy.plot.plotml.EditablePlotMLApplication
-   </pre>
-   Initially, none of the data sets is editable. Use the Edit menu's
-   Edit Dataset item to make a data set editable.
-
-   @author Edward A. Lee
-   @version $Id: EditablePlotMLApplication.java,v 1.47 2005/04/29 20:05:03 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-   @see ptolemy.plot.PlotBox
-   @see ptolemy.plot.Plot
-*/
+ * An application that can plot data in PlotML format from a URL or
+ * from files specified on the command line, and can then permit the
+ * user to edit the plot.
+ * To compile and run this application, do the following:
+ * <pre>
+ * javac -classpath ../../.. EditablePlotMLApplication.java
+ * java -classpath ../../.. ptolemy.plot.plotml.EditablePlotMLApplication
+ * </pre>
+ * Initially, none of the data sets is editable. Use the Edit menu's
+ * Edit Dataset item to make a data set editable.
+ *
+ * @author Edward A. Lee
+ * @version $Id: EditablePlotMLApplication.java,v 1.47 2005/04/29 20:05:03 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @see ptolemy.plot.PlotBox
+ * @see ptolemy.plot.Plot
+ * @since Ptolemy II 0.4
+ */
 public class EditablePlotMLApplication extends PlotMLApplication {
-    /** Construct a plot with no command-line arguments.
-     *  It initially displays a sample plot.
-     *  @exception Exception If command line arguments have problems.
+    /**
+     * Construct a plot with no command-line arguments.
+     * It initially displays a sample plot.
+     *
+     * @throws Exception If command line arguments have problems.
      */
     public EditablePlotMLApplication() throws Exception {
         this(null);
     }
 
-    /** Construct a plot with the specified command-line arguments.
-     *  @param args The command-line arguments.
-     *  @exception Exception If command line arguments have problems.
+    /**
+     * Construct a plot with the specified command-line arguments.
+     *
+     * @param args The command-line arguments.
+     * @throws Exception If command line arguments have problems.
      */
     public EditablePlotMLApplication(String[] args) throws Exception {
         this(new EditablePlot(), args);
     }
 
-    /** Construct a plot with the specified command-line arguments
-     *  and instance of plot.
-     *  @param plot The instance of EditablePlot to use.
-     *  @param args The command-line arguments.
-     *  @exception Exception If command line arguments have problems.
+    /**
+     * Construct a plot with the specified command-line arguments
+     * and instance of plot.
+     *
+     * @param plot The instance of EditablePlot to use.
+     * @param args The command-line arguments.
+     * @throws Exception If command line arguments have problems.
      */
     public EditablePlotMLApplication(EditablePlot plot, String[] args)
             throws Exception {
@@ -122,7 +123,7 @@ public class EditablePlotMLApplication extends PlotMLApplication {
         // http://developer.java.sun.com/developer/bugParade/bugs/4736093.html
         // suggests this, which does not seem to help
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke
-                .getKeyStroke(KeyEvent.VK_ALT, Event.ALT_MASK, false),
+                        .getKeyStroke(KeyEvent.VK_ALT, Event.ALT_MASK, false),
                 "repaint");
 
         _editMenu.add(select);
@@ -136,9 +137,10 @@ public class EditablePlotMLApplication extends PlotMLApplication {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
 
-    /** Create a new plot window and map it to the screen.
-     *  The command to run would be:
-     *  <pre>
+    /**
+     * Create a new plot window and map it to the screen.
+     * The command to run would be:
+     * <pre>
      *  java -classpath $PTII ptolemy.plot.plotml.EditablePlotMLApplication
      *  <pre>
      *  @param args Arguments suitable for the
@@ -147,16 +149,16 @@ public class EditablePlotMLApplication extends PlotMLApplication {
     public static void main(final String[] args) {
         try {
             Runnable doActions = new Runnable() {
-                    public void run() {
-                        try {
-                            new EditablePlotMLApplication(new EditablePlot(),
-                                    args);
-                        } catch (Exception ex) {
-                            System.err.println(ex.toString());
-                            ex.printStackTrace();
-                        }
+                public void run() {
+                    try {
+                        new EditablePlotMLApplication(new EditablePlot(),
+                                args);
+                    } catch (Exception ex) {
+                        System.err.println(ex.toString());
+                        ex.printStackTrace();
                     }
-                };
+                }
+            };
 
             // NOTE: Using invokeAndWait() here risks causing
             // deadlock.  However, the Sun Tutorial recommends calling
@@ -183,34 +185,37 @@ public class EditablePlotMLApplication extends PlotMLApplication {
     ///////////////////////////////////////////////////////////////////
     ////                         protected methods                 ////
 
-    /** Display basic information about the application.
+    /**
+     * Display basic information about the application.
      */
     protected void _about() {
         JOptionPane.showMessageDialog(this,
                 "EditablePlotMLApplication class\n" + "By: Edward A. Lee "
-                + "and Christopher Hylands\n" + "Version " + PlotBox.PTPLOT_RELEASE
-                + ", Build: $Id: EditablePlotMLApplication.java,v 1.47 2005/04/29 20:05:03 cxh Exp $\n\n"
-                + "For more information, see\n"
-                + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n\n"
-                + "Copyright (c) 1997-2005, "
-                + "The Regents of the University of California.",
+                        + "and Christopher Hylands\n" + "Version " + PlotBox.PTPLOT_RELEASE
+                        + ", Build: $Id: EditablePlotMLApplication.java,v 1.47 2005/04/29 20:05:03 cxh Exp $\n\n"
+                        + "For more information, see\n"
+                        + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n\n"
+                        + "Copyright (c) 1997-2005, "
+                        + "The Regents of the University of California.",
                 "About Ptolemy Plot", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** Display more detailed information than given by _about().
+    /**
+     * Display more detailed information than given by _about().
      */
     protected void _help() {
         JOptionPane.showMessageDialog(this,
                 "EditablePlotMLApplication is a standalone plot "
-                + " application.\n"
-                + "  File formats understood: PlotML and Ptplot ASCII.\n"
-                + "  Left mouse button: Zooming.\n"
-                + "  Right mouse button: Editing data (use edit menu to select "
-                + "a dataset).\n\n" + _usage(), "About Ptolemy Plot",
+                        + " application.\n"
+                        + "  File formats understood: PlotML and Ptplot ASCII.\n"
+                        + "  Left mouse button: Zooming.\n"
+                        + "  Right mouse button: Editing data (use edit menu to select "
+                        + "a dataset).\n\n" + _usage(), "About Ptolemy Plot",
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** Open a dialog to select a dataset to edit.
+    /**
+     * Open a dialog to select a dataset to edit.
      */
     protected void _selectDataset() {
         Query query = new Query();

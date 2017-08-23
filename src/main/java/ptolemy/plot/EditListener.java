@@ -32,26 +32,27 @@ package ptolemy.plot;
 //// EditListener
 
 /**
-   Interface for listeners that are informed of plot edit events.
-   These events are generated when a user modifies the plot data using
-   interactive facilities of an editable subclass of Plot.
-
-   @author  Edward A. Lee
-   @version $Id: EditListener.java,v 1.12 2005/03/01 01:00:40 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating Red (eal)
-   @Pt.AcceptedRating Red (cxh)
-   @see EditablePlot
-
-*/
+ * Interface for listeners that are informed of plot edit events.
+ * These events are generated when a user modifies the plot data using
+ * interactive facilities of an editable subclass of Plot.
+ *
+ * @author Edward A. Lee
+ * @version $Id: EditListener.java,v 1.12 2005/03/01 01:00:40 cxh Exp $
+ * @Pt.ProposedRating Red (eal)
+ * @Pt.AcceptedRating Red (cxh)
+ * @see EditablePlot
+ * @since Ptolemy II 0.4
+ */
 public interface EditListener {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
 
-    /** Notify that data in the specified plot has been modified
-     *  by a user edit action.
-     *  @param source The plot containing the modified data.
-     *  @param dataset The data set that has been modified.
+    /**
+     * Notify that data in the specified plot has been modified
+     * by a user edit action.
+     *
+     * @param source  The plot containing the modified data.
+     * @param dataset The data set that has been modified.
      */
     public void editDataModified(EditablePlot source, int dataset);
 }

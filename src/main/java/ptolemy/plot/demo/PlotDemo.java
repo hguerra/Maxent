@@ -35,14 +35,14 @@ import ptolemy.plot.PlotApplet;
 //// PlotDemo
 
 /**
-   Plot a variety of test signals.
-
-   @author Edward A. Lee
-   @version $Id: PlotDemo.java,v 1.48 2005/04/25 22:48:51 cxh Exp $
-   @since Ptolemy II 0.2
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-*/
+ * Plot a variety of test signals.
+ *
+ * @author Edward A. Lee
+ * @version $Id: PlotDemo.java,v 1.48 2005/04/25 22:48:51 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @since Ptolemy II 0.2
+ */
 public class PlotDemo extends PlotApplet {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
@@ -52,7 +52,7 @@ public class PlotDemo extends PlotApplet {
      */
     public String getAppletInfo() {
         return "PlotDemo 2.0: Demo of Plot.\n" + "By: Edward A. Lee\n "
-            + "($Id: PlotDemo.java,v 1.48 2005/04/25 22:48:51 cxh Exp $)";
+                + "($Id: PlotDemo.java,v 1.48 2005/04/25 22:48:51 cxh Exp $)";
     }
 
     /**

@@ -31,63 +31,66 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot.plotml;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-
+import com.microstar.xml.XmlException;
 import ptolemy.plot.Plot;
 import ptolemy.plot.PlotApplication;
 import ptolemy.plot.PlotBox;
 
-import com.microstar.xml.XmlException;
+import javax.swing.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// PlotMLApplication
 
 /**
-   An application that can plot data in PlotML format from a URL or
-   from files specified on the command line.
-   To compile and run this application, do the following:
-   <pre>
-   javac -classpath ../.. PlotMLApplication.java
-   java -classpath ../.. ptolemy.plot.plotml.PlotMLApplication
-   </pre>
-
-   @author Edward A. Lee
-   @version $Id: PlotMLApplication.java,v 1.33 2005/04/29 20:05:03 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-   @see PlotBox
-   @see Plot
-*/
+ * An application that can plot data in PlotML format from a URL or
+ * from files specified on the command line.
+ * To compile and run this application, do the following:
+ * <pre>
+ * javac -classpath ../.. PlotMLApplication.java
+ * java -classpath ../.. ptolemy.plot.plotml.PlotMLApplication
+ * </pre>
+ *
+ * @author Edward A. Lee
+ * @version $Id: PlotMLApplication.java,v 1.33 2005/04/29 20:05:03 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @see PlotBox
+ * @see Plot
+ * @since Ptolemy II 0.4
+ */
 public class PlotMLApplication extends PlotApplication {
-    /** Construct a plot with no command-line arguments.
-     *  It initially displays a sample plot.
-     *  @exception Exception If command line arguments have problems.
+    /**
+     * Construct a plot with no command-line arguments.
+     * It initially displays a sample plot.
+     *
+     * @throws Exception If command line arguments have problems.
      */
     public PlotMLApplication() throws Exception {
         this(null);
     }
 
-    /** Construct a plot with the specified command-line arguments.
-     *  @param args The command-line arguments.
-     *  @exception Exception If command line arguments have problems.
+    /**
+     * Construct a plot with the specified command-line arguments.
+     *
+     * @param args The command-line arguments.
+     * @throws Exception If command line arguments have problems.
      */
     public PlotMLApplication(String[] args) throws Exception {
         this(new Plot(), args);
     }
 
-    /** Construct a plot with the specified command-line arguments
-     *  and instance of plot.
-     *  @param plot The instance of Plot to use.
-     *  @param args The command-line arguments.
-     *  @exception Exception If command line arguments have problems.
+    /**
+     * Construct a plot with the specified command-line arguments
+     * and instance of plot.
+     *
+     * @param plot The instance of Plot to use.
+     * @param args The command-line arguments.
+     * @throws Exception If command line arguments have problems.
      */
     public PlotMLApplication(PlotBox plot, String[] args)
             throws Exception {
@@ -97,9 +100,10 @@ public class PlotMLApplication extends PlotApplication {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
 
-    /** Create a new plot window and map it to the screen.
-     *  The command to run would be:
-     *  <pre>
+    /**
+     * Create a new plot window and map it to the screen.
+     * The command to run would be:
+     * <pre>
      *  java -classpath $PTII ptolemy.plot.plotml.PlotMLApplication
      *  <pre>
      *  @param args Arguments suitable for the
@@ -108,15 +112,15 @@ public class PlotMLApplication extends PlotApplication {
     public static void main(final String[] args) {
         try {
             Runnable doActions = new Runnable() {
-                    public void run() {
-                        try {
-                            new PlotMLApplication(new Plot(), args);
-                        } catch (Exception ex) {
-                            System.err.println(ex.toString());
-                            ex.printStackTrace();
-                        }
+                public void run() {
+                    try {
+                        new PlotMLApplication(new Plot(), args);
+                    } catch (Exception ex) {
+                        System.err.println(ex.toString());
+                        ex.printStackTrace();
                     }
-                };
+                }
+            };
 
             // NOTE: Using invokeAndWait() here risks causing
             // deadlock.  However, the Sun Tutorial recommends calling
@@ -145,32 +149,35 @@ public class PlotMLApplication extends PlotApplication {
     protected void _about() {
         JOptionPane.showMessageDialog(this,
                 "PlotMLApplication class\n" + "By: Edward A. Lee "
-                + "and Christopher Hylands\n" + "Version " + PlotBox.PTPLOT_RELEASE
-                + ", Build: $Id: PlotMLApplication.java,v 1.33 2005/04/29 20:05:03 cxh Exp $\n\n"
-                + "For more information, see\n"
-                + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n\n"
-                + "Copyright (c) 1997-2005, "
-                + "The Regents of the University of California.",
+                        + "and Christopher Hylands\n" + "Version " + PlotBox.PTPLOT_RELEASE
+                        + ", Build: $Id: PlotMLApplication.java,v 1.33 2005/04/29 20:05:03 cxh Exp $\n\n"
+                        + "For more information, see\n"
+                        + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n\n"
+                        + "Copyright (c) 1997-2005, "
+                        + "The Regents of the University of California.",
                 "About Ptolemy Plot", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** Display more detailed information than given by _about().
+    /**
+     * Display more detailed information than given by _about().
      */
     protected void _help() {
         JOptionPane.showMessageDialog(this,
                 "PlotMLApplication is a standalone plot " + " application.\n"
-                + "  File formats understood: PlotML and Ptplot ASCII.\n"
-                + "  Left mouse button: Zooming.\n\n" + _usage(),
+                        + "  File formats understood: PlotML and Ptplot ASCII.\n"
+                        + "  Left mouse button: Zooming.\n\n" + _usage(),
                 "About Ptolemy Plot", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** Read the specified stream.  This method checks to see whether
-     *  the data is PlotML data, and if so, creates a parser to read it.
-     *  If not, it defers to the parent class to read it.
-     *  @param base The base for relative file references, or null if
-     *   there are not relative file references.
-     *  @param in The input stream.
-     *  @exception IOException If the stream cannot be read.
+    /**
+     * Read the specified stream.  This method checks to see whether
+     * the data is PlotML data, and if so, creates a parser to read it.
+     * If not, it defers to the parent class to read it.
+     *
+     * @param base The base for relative file references, or null if
+     *             there are not relative file references.
+     * @param in   The input stream.
+     * @throws IOException If the stream cannot be read.
      */
     protected void _read(URL base, InputStream in) throws IOException {
         // Create a buffered input stream so that mark and reset
@@ -197,9 +204,9 @@ public class PlotMLApplication extends PlotApplication {
                 if (ex instanceof XmlException) {
                     XmlException xmlex = (XmlException) ex;
                     msg = "PlotMLApplication: failed to parse PlotML data:\n"
-                        + "line: " + xmlex.getLine() + ", column: "
-                        + xmlex.getColumn() + "\nIn entity: "
-                        + xmlex.getSystemId() + "\n";
+                            + "line: " + xmlex.getLine() + ", column: "
+                            + xmlex.getColumn() + "\nIn entity: "
+                            + xmlex.getSystemId() + "\n";
                 } else {
                     msg = "PlotMLApplication: failed to parse PlotML data:\n";
                 }
@@ -212,9 +219,11 @@ public class PlotMLApplication extends PlotApplication {
         }
     }
 
-    /** Create a new parser object for the application.  Derived classes can
-     *  redefine this method to return a different type of parser.
-     *  @return A new parser.
+    /**
+     * Create a new parser object for the application.  Derived classes can
+     * redefine this method to return a different type of parser.
+     *
+     * @return A new parser.
      */
     protected PlotBoxMLParser _newParser() {
         if (plot instanceof Plot) {

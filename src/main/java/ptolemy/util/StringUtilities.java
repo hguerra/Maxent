@@ -29,6 +29,7 @@ package ptolemy.util;
 
 // Note that classes in ptolemy.util do not depend on any
 // other ptolemy packages.
+
 import java.io.File;
 import java.io.IOException;
 import java.io.StreamTokenizer;
@@ -44,39 +45,79 @@ import java.util.StringTokenizer;
 //// StringUtilities
 
 /**
- A collection of utilities for manipulating strings.
- These utilities do not depend on any other ptolemy packages.
-
- @author Christopher Brooks
- @version $Id: StringUtilities.java,v 1.79.2.1 2005/07/14 20:44:08 cxh Exp $
- @since Ptolemy II 2.1
- @Pt.ProposedRating Green (eal)
- @Pt.AcceptedRating Green (cxh)
+ * A collection of utilities for manipulating strings.
+ * These utilities do not depend on any other ptolemy packages.
+ *
+ * @author Christopher Brooks
+ * @version $Id: StringUtilities.java,v 1.79.2.1 2005/07/14 20:44:08 cxh Exp $
+ * @Pt.ProposedRating Green (eal)
+ * @Pt.AcceptedRating Green (cxh)
+ * @since Ptolemy II 2.1
  */
 public class StringUtilities {
-    /** Instances of this class cannot be created.
+    /**
+     * Maximum length in characters of a long string before
+     * {@link #ellipsis(String, int)} truncates and add a
+     * trailing ". . .".  This variable is used by callers
+     * of ellipsis(String, int).
+     */
+    public static final int ELLIPSIS_LENGTH_LONG = 2000;
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         public methods                    ////
+    /**
+     * Maximum length in characters of a short string before
+     * {@link #ellipsis(String, int)} truncates and add a
+     * trailing ". . .". This variable is used by callers
+     * of ellipsis(String, int).
+     */
+    public static final int ELLIPSIS_LENGTH_SHORT = 400;
+    /**
+     * The line separator string.  Under Windows, this would
+     * be "\r\n"; under Unix, "\n"; Under Macintosh, "\r".
+     */
+    public static final String LINE_SEPARATOR =
+            System.getProperty("line.separator");
+    /**
+     * Location of Application preferences such as the user library.
+     * This field is not final in case other applications want to
+     * set it to a different directory.
+     *
+     * @see #preferencesDirectory()
+     */
+    public static String PREFERENCES_DIRECTORY = ".ptolemyII";
+    /**
+     * Set to true if we print the cygwin warning in getProperty().
+     */
+    private static boolean _printedCygwinWarning = false;
+    /**
+     * Cached value of ptolemy.ptII.dir property.
+     */
+    private static String _ptolemyPtIIDir = null;
+
+    /**
+     * Instances of this class cannot be created.
      */
     private StringUtilities() {
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         public methods                    ////
-
-    /** Abbreviate a string.
-     *  If the string is longer than 80 characters, truncate it by
-     *  displaying the first 37 chars, then ". . .", then the last 38
-     *  characters.
-     *  If the <i>longName</i> argument is null, then the string
-     *  "&gt;Unnamed&lt;" is returned.
-     *  @param longName The string to be abbreviated.
-     *  @return The possibly abbreviated name.
-     *  @see #split(String)
+    /**
+     * Abbreviate a string.
+     * If the string is longer than 80 characters, truncate it by
+     * displaying the first 37 chars, then ". . .", then the last 38
+     * characters.
+     * If the <i>longName</i> argument is null, then the string
+     * "&gt;Unnamed&lt;" is returned.
+     *
+     * @param longName The string to be abbreviated.
+     * @return The possibly abbreviated name.
+     * @see #split(String)
      */
     public static String abbreviate(String longName) {
         // This method is used to abbreviate window titles so that long
         // file names may appear in the window title bar.  It is not
         // parameterized so that we can force a unified look and feel.
-        // FIXME: it would be nice to split on a nearby space. 
+        // FIXME: it would be nice to split on a nearby space.
         if (longName == null) {
             return "<Unnamed>";
         }
@@ -89,17 +130,19 @@ public class StringUtilities {
                 + longName.substring(longName.length() - 38);
     }
 
-    /** Return a string with a maximum line length of <i>length</i>
-     *  characters, limited to the given number of characters.
-     *  If there are more than 10 newlines, then the string is truncated
-     *  after 10 lines.
-     *  If the string is truncated, an ellipsis (three periods in a
-     *  row: "...") will be appended to the end of the string.
-     *  Lines that are longer than 160 characters are split into lines
-     *  that are shorter than 160 characters.
-     *  @param string The string to truncate.
-     *  @param length The number of characters to which to truncate the string.
-     *  @return The possibly truncated string with ellipsis possibly added.
+    /**
+     * Return a string with a maximum line length of <i>length</i>
+     * characters, limited to the given number of characters.
+     * If there are more than 10 newlines, then the string is truncated
+     * after 10 lines.
+     * If the string is truncated, an ellipsis (three periods in a
+     * row: "...") will be appended to the end of the string.
+     * Lines that are longer than 160 characters are split into lines
+     * that are shorter than 160 characters.
+     *
+     * @param string The string to truncate.
+     * @param length The number of characters to which to truncate the string.
+     * @return The possibly truncated string with ellipsis possibly added.
      */
     public static String ellipsis(String string, int length) {
         // If necessary, insert newlines into long strings.
@@ -113,7 +156,7 @@ public class StringUtilities {
 
         // Third argument being true means return the delimiters as tokens.
         StringTokenizer tokenizer =
-            new StringTokenizer(string, LINE_SEPARATOR, true);
+                new StringTokenizer(string, LINE_SEPARATOR, true);
 
         // If there are more than 10 lines and 10 newlines, return
         // truncate after the first 20 lines and newlines.
@@ -137,12 +180,13 @@ public class StringUtilities {
         return string;
     }
 
-    /** Given a string, replace all the instances of XML special characters
-     *  with their corresponding XML entities.  This is necessary to
-     *  allow arbitrary strings to be encoded within XML.
-     *
-     *  <p>In this method, we make the following translations:
-     *  <pre>
+    /**
+     * Given a string, replace all the instances of XML special characters
+     * with their corresponding XML entities.  This is necessary to
+     * allow arbitrary strings to be encoded within XML.
+     * <p>
+     * <p>In this method, we make the following translations:
+     * <pre>
      *  &amp; becomes &amp;amp;
      *  " becomes &amp;quot;
      *  < becomes &amp;lt;
@@ -150,10 +194,10 @@ public class StringUtilities {
      *  newline becomes &amp;#10;
      *  carriage return becomes $amp;#13;
      *  </pre>
-     *  @see #unescapeForXML(String)
      *
-     *  @param string The string to escape.
-     *  @return A new string with special characters replaced.
+     * @param string The string to escape.
+     * @return A new string with special characters replaced.
+     * @see #unescapeForXML(String)
      */
     public static String escapeForXML(String string) {
         string = substitute(string, "&", "&amp;");
@@ -165,17 +209,19 @@ public class StringUtilities {
         return string;
     }
 
-    /** Return a number of spaces that is proportional to the argument.
-     *  If the argument is negative or zero, return an empty string.
-     *  @param level The level of indenting represented by the spaces.
-     *  @return A string with zero or more spaces.
+    /**
+     * Return a number of spaces that is proportional to the argument.
+     * If the argument is negative or zero, return an empty string.
+     *
+     * @param level The level of indenting represented by the spaces.
+     * @return A string with zero or more spaces.
      */
     public static String getIndentPrefix(int level) {
         if (level <= 0) {
             return "";
         }
 
-        StringBuffer result = new StringBuffer(level*4);
+        StringBuffer result = new StringBuffer(level * 4);
 
         for (int i = 0; i < level; i++) {
             result.append("    ");
@@ -184,35 +230,37 @@ public class StringUtilities {
         return result.toString();
     }
 
-    /** Get the specified property from the environment. An empty
-     *  string is returned if the property named by the "propertyName"
-     *  argument environment variable does not exist, though if
-     *  certain properties are not defined, then we make various
-     *  attempts to determine them and then set them.  See the javadoc
-     *  page for java.util.System.getProperties() for a list of system
-     *  properties.
-
-     *  <p>The following properties are handled specially
-     *  <dl>
-     *  <dt> "ptolemy.ptII.dir"
-     *  <dd> vergil usually sets the ptolemy.ptII.dir property to the
-     *  value of $PTII.  However, if we are running under Web Start,
-     *  then this property might not be set, in which case we look
-     *  for "ptolemy/util/StringUtilities.class" and set the
-     *  property accordingly.
-     *  <dt> "ptolemy.ptII.dirAsURL"
-     *  <dd> Return $PTII as a URL.  For example, if $PTII was c:\ptII,
-     *  then return file:/c:/ptII/.
-     *  <dt> "user.dir"
-     *  <dd> Return the canonical path name to the current working
-     *  directory.  This is necessary because under Windows with
-     *  JDK1.4.1, the System.getProperty() call returns
-     *  <code><b>c</b>:/<i>foo</i></code> whereas most of the other
-     *  methods that operate on path names return
-     *  <code><b>C</b>:/<i>foo</i></code>.
-     *  </dl>
-     *  @param propertyName The name of property.
-     *  @return A String containing the string value of the property.
+    /**
+     * Get the specified property from the environment. An empty
+     * string is returned if the property named by the "propertyName"
+     * argument environment variable does not exist, though if
+     * certain properties are not defined, then we make various
+     * attempts to determine them and then set them.  See the javadoc
+     * page for java.util.System.getProperties() for a list of system
+     * properties.
+     * <p>
+     * <p>The following properties are handled specially
+     * <dl>
+     * <dt> "ptolemy.ptII.dir"
+     * <dd> vergil usually sets the ptolemy.ptII.dir property to the
+     * value of $PTII.  However, if we are running under Web Start,
+     * then this property might not be set, in which case we look
+     * for "ptolemy/util/StringUtilities.class" and set the
+     * property accordingly.
+     * <dt> "ptolemy.ptII.dirAsURL"
+     * <dd> Return $PTII as a URL.  For example, if $PTII was c:\ptII,
+     * then return file:/c:/ptII/.
+     * <dt> "user.dir"
+     * <dd> Return the canonical path name to the current working
+     * directory.  This is necessary because under Windows with
+     * JDK1.4.1, the System.getProperty() call returns
+     * <code><b>c</b>:/<i>foo</i></code> whereas most of the other
+     * methods that operate on path names return
+     * <code><b>C</b>:/<i>foo</i></code>.
+     * </dl>
+     *
+     * @param propertyName The name of property.
+     * @return A String containing the string value of the property.
      */
     public static String getProperty(String propertyName) {
         // NOTE: getProperty() will probably fail in applets, which
@@ -286,8 +334,8 @@ public class StringUtilities {
 
                 // PTII variable was not set
                 URL namedObjURL = Thread.currentThread()
-                    .getContextClassLoader()
-                    .getResource(stringUtilitiesPath);
+                        .getContextClassLoader()
+                        .getResource(stringUtilitiesPath);
 
                 if (namedObjURL != null) {
                     // Get the file portion of URL
@@ -325,12 +373,12 @@ public class StringUtilities {
                     // RMptsupport.jar or
                     // XMptsupport.jar1088483703686
                     String ptsupportJarName = File.separator + "DMptolemy"
-                        + File.separator + "RMptsupport.jar";
+                            + File.separator + "RMptsupport.jar";
 
                     if (_ptolemyPtIIDir.endsWith(ptsupportJarName)) {
                         _ptolemyPtIIDir = _ptolemyPtIIDir.substring(0,
                                 _ptolemyPtIIDir.length()
-                                - ptsupportJarName.length());
+                                        - ptsupportJarName.length());
                     } else {
                         ptsupportJarName = "/DMptolemy/XMptsupport.jar";
 
@@ -338,7 +386,7 @@ public class StringUtilities {
                                 != -1) {
                             _ptolemyPtIIDir = _ptolemyPtIIDir.substring(0,
                                     _ptolemyPtIIDir
-                                    .lastIndexOf(ptsupportJarName));
+                                            .lastIndexOf(ptsupportJarName));
                         }
                     }
                 }
@@ -350,8 +398,8 @@ public class StringUtilities {
                 // see %20 as three characters: '%', '2', '0'.
                 if (_ptolemyPtIIDir != null) {
                     _ptolemyPtIIDir =
-                        StringUtilities.substitute(_ptolemyPtIIDir,
-                                "%20", " ");
+                            StringUtilities.substitute(_ptolemyPtIIDir,
+                                    "%20", " ");
                 }
 
                 if (_ptolemyPtIIDir == null) {
@@ -375,9 +423,9 @@ public class StringUtilities {
                 return _ptolemyPtIIDir;
             }
         }
-                
 
-        // If the property is not set then we return the empty string. 
+
+        // If the property is not set then we return the empty string.
         if (property == null) {
             return "";
         }
@@ -385,16 +433,18 @@ public class StringUtilities {
         return property;
     }
 
-    /** Return a string representing the name of the file expected to
-     *  contain the source code for the specified object.  This method
-     *  simply replaces "." with "/" and appends ".java" to the class
-     *  name.  
-     *  @param object The object.
-     *  @return The expected source file name.
+    /**
+     * Return a string representing the name of the file expected to
+     * contain the source code for the specified object.  This method
+     * simply replaces "." with "/" and appends ".java" to the class
+     * name.
+     *
+     * @param object The object.
+     * @return The expected source file name.
      */
     public static String objectToSourceFileName(Object object) {
         String sourceFileNameBase =
-            object.getClass().getName().replace('.', '/');
+                object.getClass().getName().replace('.', '/');
         // Inner classes: Get rid of everything past the first $
         if (sourceFileNameBase.indexOf("$") != -1) {
             sourceFileNameBase = sourceFileNameBase.substring(
@@ -403,19 +453,21 @@ public class StringUtilities {
         return sourceFileNameBase + ".java";
     }
 
-    /** Return the preferences directory, creating it if necessary.
-     *  @return A string naming the preferences directory.  The last
-     *  character of the string will have the file.separator character
-     *  appended.
-     *  @exception IOException If the directory could not be created.
-     *  @see #PREFERENCES_DIRECTORY
+    /**
+     * Return the preferences directory, creating it if necessary.
+     *
+     * @return A string naming the preferences directory.  The last
+     * character of the string will have the file.separator character
+     * appended.
+     * @throws IOException If the directory could not be created.
+     * @see #PREFERENCES_DIRECTORY
      */
     public static String preferencesDirectory() throws IOException {
         String preferencesDirectoryName = StringUtilities
-            .getProperty("user.home")
-            + File.separator
-            + StringUtilities.PREFERENCES_DIRECTORY
-            + File.separator;
+                .getProperty("user.home")
+                + File.separator
+                + StringUtilities.PREFERENCES_DIRECTORY
+                + File.separator;
         File preferencesDirectory = new File(preferencesDirectoryName);
 
         if (!preferencesDirectory.isDirectory()) {
@@ -428,43 +480,47 @@ public class StringUtilities {
         return preferencesDirectoryName;
     }
 
-    /** Return the name of the properties file.
-     *  The properties file is a file of a format suitable for
-     *  java.util.properties.load(InputStream).
-     *  The file is named "ptII.properties" and is found in the
-     *  {@link #PREFERENCES_DIRECTORY} directory that is returned
-     *  by {@link #preferencesDirectory()}.  Typically, this value
-     *  is "$HOME/.ptolemyII/ptII.properties".
-     *  @see #preferencesDirectory()
-     *  @see #PREFERENCES_DIRECTORY
-     *  @return The name of the properties file.
-     *  @exception IOException If {@link #preferencesDirectory()} throws it.
+    /**
+     * Return the name of the properties file.
+     * The properties file is a file of a format suitable for
+     * java.util.properties.load(InputStream).
+     * The file is named "ptII.properties" and is found in the
+     * {@link #PREFERENCES_DIRECTORY} directory that is returned
+     * by {@link #preferencesDirectory()}.  Typically, this value
+     * is "$HOME/.ptolemyII/ptII.properties".
+     *
+     * @return The name of the properties file.
+     * @throws IOException If {@link #preferencesDirectory()} throws it.
+     * @see #preferencesDirectory()
+     * @see #PREFERENCES_DIRECTORY
      */
     public static String propertiesFileName() throws IOException {
         return preferencesDirectory() + "ptII.properties";
     }
 
-    /** Sanitize a String so that it can be used as a Java identifier.
-     *  Section 3.8 of the Java language spec says:
-     *  <blockquote>
-     *  "An identifier is an unlimited-length sequence of Java letters
-     *  and Java digits, the first of which must be a Java letter. An
-     *  identifier cannot have the same spelling (Unicode character
-     *  sequence) as a keyword (3.9), boolean literal (3.10.3), or
-     *  the null literal (3.10.7)."
-     *  </blockquote>
-     *  Java characters are A-Z, a-z, $ and _.
-     *  <p> Characters that are not permitted in a Java identifier are changed
-     *  to underscores.
-     *  This method does not check that the returned string is a
-     *  keyword or literal.
-     *  Note that two different strings can sanitize to the same
-     *  string.
-     *  This method is commonly used during code generation to map the
-     *  name of a ptolemy object to a valid identifier name.
-     *  @param name A string with spaces and other characters that
-     *  cannot be in a Java name.
-     *  @return A String that follows the Java identifier rules.
+    /**
+     * Sanitize a String so that it can be used as a Java identifier.
+     * Section 3.8 of the Java language spec says:
+     * <blockquote>
+     * "An identifier is an unlimited-length sequence of Java letters
+     * and Java digits, the first of which must be a Java letter. An
+     * identifier cannot have the same spelling (Unicode character
+     * sequence) as a keyword (3.9), boolean literal (3.10.3), or
+     * the null literal (3.10.7)."
+     * </blockquote>
+     * Java characters are A-Z, a-z, $ and _.
+     * <p> Characters that are not permitted in a Java identifier are changed
+     * to underscores.
+     * This method does not check that the returned string is a
+     * keyword or literal.
+     * Note that two different strings can sanitize to the same
+     * string.
+     * This method is commonly used during code generation to map the
+     * name of a ptolemy object to a valid identifier name.
+     *
+     * @param name A string with spaces and other characters that
+     *             cannot be in a Java name.
+     * @return A String that follows the Java identifier rules.
      */
     public static String sanitizeName(String name) {
         char[] nameArray = name.toCharArray();
@@ -486,34 +542,38 @@ public class StringUtilities {
         }
     }
 
-    /**  If the string is longer than 79 characters, split it up by
-     *  adding newlines in all newline delimited substrings
-     *  that are longer than 79 characters.
-     *  If the <i>longName</i> argument is null, then the string
-     *  "&gt;Unnamed&lt;" is returned.
-     *  @see #abbreviate(String)
-     *  @see #split(String, int)
-     *  @param longName The string to optionally split up
-     *  @return Either the original string, or the string with newlines
-     *  inserted.
+    /**
+     * If the string is longer than 79 characters, split it up by
+     * adding newlines in all newline delimited substrings
+     * that are longer than 79 characters.
+     * If the <i>longName</i> argument is null, then the string
+     * "&gt;Unnamed&lt;" is returned.
+     *
+     * @param longName The string to optionally split up
+     * @return Either the original string, or the string with newlines
+     * inserted.
+     * @see #abbreviate(String)
+     * @see #split(String, int)
      */
     public static String split(String longName) {
         return split(longName, 79);
     }
 
-    /** If the string is longer than <i>length</i> characters,
-     *  split the string up by adding newlines in all
-     *  newline delimited substrings that are longer than <i>length</i>
-     *  characters.
-     *  If the <i>longName</i> argument is null, then the string
-     *  "&gt;Unnamed&lt;" is returned.
-     *  @see #abbreviate(String)
-     *  @see #split(String)
-     *  @param longName The string to optionally split.
-     *  @param length The maximum length of the sequence of characters
-     *  before a newline is inserted.
-     *  @return Either the original string, or the string with newlines
-     *  inserted.
+    /**
+     * If the string is longer than <i>length</i> characters,
+     * split the string up by adding newlines in all
+     * newline delimited substrings that are longer than <i>length</i>
+     * characters.
+     * If the <i>longName</i> argument is null, then the string
+     * "&gt;Unnamed&lt;" is returned.
+     *
+     * @param longName The string to optionally split.
+     * @param length   The maximum length of the sequence of characters
+     *                 before a newline is inserted.
+     * @return Either the original string, or the string with newlines
+     * inserted.
+     * @see #abbreviate(String)
+     * @see #split(String)
      */
     public static String split(String longName, int length) {
         if (longName == null) {
@@ -560,43 +620,53 @@ public class StringUtilities {
         return results.toString();
     }
 
-    /** Given a file or URL name, return as a URL.  If the file name
-     *  is relative, then it is interpreted as being relative to the
-     *  specified base directory. If the name begins with
-     *  "xxxxxxCLASSPATHxxxxxx" or "$CLASSPATH"
-     *  then search for the file relative to the classpath.
-     *  Note that this is the value of the globally defined constant
-     *  $CLASSPATH available in the expression language.
-     *  If no file is found, then throw an exception.
-     *  @param name The name of a file or URL.
-     *  @param baseDirectory The base directory for relative file names,
-     *   or null to specify none.
-     *  @param classLoader The class loader to use to locate system
-     *   resources, or null to use the system class loader.
-     *  @return A URL, or null if no file name or URL has been specified.
-     *  @exception IOException If the file cannot be read, or
-     *   if the file cannot be represented as a URL (e.g. System.in), or
-     *   the name specification cannot be parsed.
-     *  @exception MalformedURLException If the URL is malformed.
-     *  @deprecated Use FileUtilities.nameToURL instead.
+    ///////////////////////////////////////////////////////////////////
+    ////                         public variables                  ////
+    // If you change these, be sure to try running vergil on
+    // a HSIF moml file
+    // vergil ../hsif/demo/SwimmingPool/SwimmingPool.xml
+
+    /**
+     * Given a file or URL name, return as a URL.  If the file name
+     * is relative, then it is interpreted as being relative to the
+     * specified base directory. If the name begins with
+     * "xxxxxxCLASSPATHxxxxxx" or "$CLASSPATH"
+     * then search for the file relative to the classpath.
+     * Note that this is the value of the globally defined constant
+     * $CLASSPATH available in the expression language.
+     * If no file is found, then throw an exception.
+     *
+     * @param name          The name of a file or URL.
+     * @param baseDirectory The base directory for relative file names,
+     *                      or null to specify none.
+     * @param classLoader   The class loader to use to locate system
+     *                      resources, or null to use the system class loader.
+     * @return A URL, or null if no file name or URL has been specified.
+     * @throws IOException           If the file cannot be read, or
+     *                               if the file cannot be represented as a URL (e.g. System.in), or
+     *                               the name specification cannot be parsed.
+     * @throws MalformedURLException If the URL is malformed.
+     * @deprecated Use FileUtilities.nameToURL instead.
      */
     public static URL stringToURL(String name, URI baseDirectory,
-            ClassLoader classLoader) throws IOException {
+                                  ClassLoader classLoader) throws IOException {
         return FileUtilities.nameToURL(name, baseDirectory, classLoader);
     }
 
-    /** Replace all occurrences of <i>pattern</i> in the specified
-     *  string with <i>replacement</i>.  Note that the pattern is NOT
-     *  a regular expression, and that relative to the
-     *  String.replaceAll() method in jdk1.4, this method is extremely
-     *  slow.  This method does not work well with back slashes.
-     *  @param string The string to edit.
-     *  @param pattern The string to replace.
-     *  @param replacement The string to replace it with.
-     *  @return A new string with the specified replacements.
+    /**
+     * Replace all occurrences of <i>pattern</i> in the specified
+     * string with <i>replacement</i>.  Note that the pattern is NOT
+     * a regular expression, and that relative to the
+     * String.replaceAll() method in jdk1.4, this method is extremely
+     * slow.  This method does not work well with back slashes.
+     *
+     * @param string      The string to edit.
+     * @param pattern     The string to replace.
+     * @param replacement The string to replace it with.
+     * @return A new string with the specified replacements.
      */
     public static String substitute(String string, String pattern,
-            String replacement) {
+                                    String replacement) {
         int start = string.indexOf(pattern);
 
         while (start != -1) {
@@ -610,31 +680,32 @@ public class StringUtilities {
         return string;
     }
 
-    /** Perform file prefix substitution.
-     *  If <i>string</i> starts with <i>prefix</i>, then we return a
-     *  new string that consists of the value or <i>replacement</i>
-     *  followed by the value of <i>string</i> with the value of
-     *  <i>prefix</i> removed.  For example,
-     *  substituteFilePrefix("c:/ptII", "c:/ptII/ptolemy, "$PTII")
-     *  will return "$PTII/ptolemy"
+    /**
+     * Perform file prefix substitution.
+     * If <i>string</i> starts with <i>prefix</i>, then we return a
+     * new string that consists of the value or <i>replacement</i>
+     * followed by the value of <i>string</i> with the value of
+     * <i>prefix</i> removed.  For example,
+     * substituteFilePrefix("c:/ptII", "c:/ptII/ptolemy, "$PTII")
+     * will return "$PTII/ptolemy"
+     * <p>
+     * <p>If <i>prefix</i> is not a simple prefix of <i>string</i>, then
+     * we use the file system to find the canonical names of the files.
+     * For this to work, <i>prefix</i> and <i>string</i> should name
+     * files that exist, see java.io.File.getCanonicalFile() for details.
+     * <p>
+     * <p>If <i>prefix</i> is not a prefix of <i>string</i>, then
+     * we return <i>string</i>
      *
-     *  <p>If <i>prefix</i> is not a simple prefix of <i>string</i>, then
-     *  we use the file system to find the canonical names of the files.
-     *  For this to work, <i>prefix</i> and <i>string</i> should name
-     *  files that exist, see java.io.File.getCanonicalFile() for details.
-     *
-     *  <p>If <i>prefix</i> is not a prefix of <i>string</i>, then
-     *  we return <i>string</i>
-     *
-     *  @param prefix The prefix string, for example, "c:/ptII".
-     *  @param string The string to be substituted, for example,
-     *  "c:/ptII/ptolemy".
-     *  @param replacement The replacement to be substituted in, for example,
-     *  "$PTII"
-     *  @return The possibly substituted string.
+     * @param prefix      The prefix string, for example, "c:/ptII".
+     * @param string      The string to be substituted, for example,
+     *                    "c:/ptII/ptolemy".
+     * @param replacement The replacement to be substituted in, for example,
+     *                    "$PTII"
+     * @return The possibly substituted string.
      */
     public static String substituteFilePrefix(String prefix, String string,
-            String replacement) {
+                                              String replacement) {
         // This method is currently used by $PTII/util/testsuite/auto.tcl
         if (string.startsWith(prefix)) {
             // Hmm, what about file separators?
@@ -650,7 +721,7 @@ public class StringUtilities {
                 if (stringCanonicalPath.startsWith(prefixCanonicalPath)) {
                     return replacement
                             + stringCanonicalPath.substring(prefixCanonicalPath
-                                    .length());
+                            .length());
                 }
             } catch (Throwable throwable) {
                 // ignore.
@@ -660,16 +731,17 @@ public class StringUtilities {
         return string;
     }
 
-    /** Tokenize a String to an array of Strings for use with
-     *  Runtime.exec(String []).
+    /**
+     * Tokenize a String to an array of Strings for use with
+     * Runtime.exec(String []).
+     * <p>
+     * <p>Lines that begin with an octothorpe '#' are ignored.
+     * Substrings that start and end with a double quote are considered
+     * to be a single token and are returned as a single array element.
      *
-     *  <p>Lines that begin with an octothorpe '#' are ignored.
-     *  Substrings that start and end with a double quote are considered
-     *  to be a single token and are returned as a single array element.
-     *
-     *  @param inputString  The String to tokenize
-     *  @return An array of substrings.
-     *  @exception IOException If StreamTokenizer.nextToken() throws it.
+     * @param inputString The String to tokenize
+     * @return An array of substrings.
+     * @throws IOException If StreamTokenizer.nextToken() throws it.
      */
     public static String[] tokenizeForExec(String inputString)
             throws IOException {
@@ -720,61 +792,65 @@ public class StringUtilities {
 
         while (streamTokenizer.nextToken() != StreamTokenizer.TT_EOF) {
             switch (streamTokenizer.ttype) {
-            case StreamTokenizer.TT_WORD:
+                case StreamTokenizer.TT_WORD:
 
-                if (inDoubleQuotedString) {
-                    if (token.length() > 0) {
-                        // FIXME: multiple spaces will get compacted here
-                        token += " ";
-                    }
-
-                    token += (singleToken + streamTokenizer.sval);
-                } else {
-                    token = singleToken + streamTokenizer.sval;
-                    commandList.add(token);
-                }
-
-                singleToken = "";
-                break;
-
-            case StreamTokenizer.TT_NUMBER:
-                throw new RuntimeException("Internal error: Found TT_NUMBER: '"
-                        + streamTokenizer.nval + "'.  We should not be "
-                        + "tokenizing numbers");
-
-            //break;
-            case StreamTokenizer.TT_EOL:
-                break;
-
-            case StreamTokenizer.TT_EOF:
-                break;
-
-            default:
-                singleToken = Character.toString((char) streamTokenizer.ttype);
-
-                if (singleToken.equals("\"")) {
                     if (inDoubleQuotedString) {
+                        if (token.length() > 0) {
+                            // FIXME: multiple spaces will get compacted here
+                            token += " ";
+                        }
+
+                        token += (singleToken + streamTokenizer.sval);
+                    } else {
+                        token = singleToken + streamTokenizer.sval;
                         commandList.add(token);
                     }
 
-                    inDoubleQuotedString = !inDoubleQuotedString;
                     singleToken = "";
-                    token = "";
-                }
+                    break;
 
-                break;
+                case StreamTokenizer.TT_NUMBER:
+                    throw new RuntimeException("Internal error: Found TT_NUMBER: '"
+                            + streamTokenizer.nval + "'.  We should not be "
+                            + "tokenizing numbers");
+
+                    //break;
+                case StreamTokenizer.TT_EOL:
+                    break;
+
+                case StreamTokenizer.TT_EOF:
+                    break;
+
+                default:
+                    singleToken = Character.toString((char) streamTokenizer.ttype);
+
+                    if (singleToken.equals("\"")) {
+                        if (inDoubleQuotedString) {
+                            commandList.add(token);
+                        }
+
+                        inDoubleQuotedString = !inDoubleQuotedString;
+                        singleToken = "";
+                        token = "";
+                    }
+
+                    break;
             }
         }
 
         return (String[]) commandList.toArray(new String[commandList.size()]);
     }
 
-    /** Given a string, replace all the instances of XML entities
-     *  with their corresponding XML special characters.  This is necessary to
-     *  allow arbitrary strings to be encoded within XML.  
-     *
-     *  <p>In this method, we make the following translations:
-     *  <pre>
+    ///////////////////////////////////////////////////////////////////
+    ////                         private variables                 ////
+
+    /**
+     * Given a string, replace all the instances of XML entities
+     * with their corresponding XML special characters.  This is necessary to
+     * allow arbitrary strings to be encoded within XML.
+     * <p>
+     * <p>In this method, we make the following translations:
+     * <pre>
      *  &amp;amp; becomes &amp
      *  &amp;quot; becomes "
      *  &amp;lt; becomes <
@@ -782,10 +858,10 @@ public class StringUtilities {
      *  &amp;#10; becomes newline
      *  &amp;#13; becomes carriage return
      *  </pre>
-     *  @see #escapeForXML(String)
      *
-     *  @param string The string to escape.
-     *  @return A new string with special characters replaced.
+     * @param string The string to escape.
+     * @return A new string with special characters replaced.
+     * @see #escapeForXML(String)
      */
     public static String unescapeForXML(String string) {
         string = substitute(string, "&amp;", "&");
@@ -797,23 +873,25 @@ public class StringUtilities {
         return string;
     }
 
-    /** Return a string that contains a description of how to use a
-     *  class that calls this method.  For example, this method is
-     *  called by "$PTII/bin/vergil -help".
-     *  @param commandTemplate  A string naming the command and the
-     *  format of the arguments, for example
-     *  "moml [options] [file . . .]"
-     *  @param commandOptions A 2xN array of Strings that list command-line
-     *  options that take arguments where the first
-     *  element is a String naming the command line option, and the
-     *  second element is the argument, for example
-     *  <code>{"-class", "<classname>")</code>
-     *  @param commandFlags An array of Strings that list command-line
-     *  options that are either present or not.
-     *  @return A string that describes the command.
+    /**
+     * Return a string that contains a description of how to use a
+     * class that calls this method.  For example, this method is
+     * called by "$PTII/bin/vergil -help".
+     *
+     * @param commandTemplate A string naming the command and the
+     *                        format of the arguments, for example
+     *                        "moml [options] [file . . .]"
+     * @param commandOptions  A 2xN array of Strings that list command-line
+     *                        options that take arguments where the first
+     *                        element is a String naming the command line option, and the
+     *                        second element is the argument, for example
+     *                        <code>{"-class", "<classname>")</code>
+     * @param commandFlags    An array of Strings that list command-line
+     *                        options that are either present or not.
+     * @return A string that describes the command.
      */
     public static String usageString(String commandTemplate,
-            String[][] commandOptions, String[] commandFlags) {
+                                     String[][] commandOptions, String[] commandFlags) {
         // This method is static so that we can reuse it in places
         // like copernicus/kernel/Copernicus and actor/gui/MoMLApplication
 
@@ -836,46 +914,4 @@ public class StringUtilities {
 
         return result.toString();
     }
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         public variables                  ////
-    // If you change these, be sure to try running vergil on
-    // a HSIF moml file
-    // vergil ../hsif/demo/SwimmingPool/SwimmingPool.xml
-
-    /** Maximum length in characters of a long string before
-     *  {@link #ellipsis(String, int)} truncates and add a
-     *  trailing ". . .".  This variable is used by callers
-     *  of ellipsis(String, int). 
-     */
-    public static final int ELLIPSIS_LENGTH_LONG = 2000;
-
-    /** Maximum length in characters of a short string before
-     *  {@link #ellipsis(String, int)} truncates and add a
-     *  trailing ". . .". This variable is used by callers
-     *  of ellipsis(String, int). 
-     */
-    public static final int ELLIPSIS_LENGTH_SHORT = 400;
-
-    /** The line separator string.  Under Windows, this would
-     *  be "\r\n"; under Unix, "\n"; Under Macintosh, "\r".
-     */
-    public static final String LINE_SEPARATOR =
-        System.getProperty("line.separator");
-
-    /** Location of Application preferences such as the user library.
-     *  This field is not final in case other applications want to
-     *  set it to a different directory.
-     *  @see #preferencesDirectory()
-     */
-    public static String PREFERENCES_DIRECTORY = ".ptolemyII";
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         private variables                 ////
-
-    /** Set to true if we print the cygwin warning in getProperty(). */
-    private static boolean _printedCygwinWarning = false;
-
-    /** Cached value of ptolemy.ptII.dir property. */
-    private static String _ptolemyPtIIDir = null;
 }

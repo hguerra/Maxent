@@ -24,9 +24,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package density;
 
 import javax.swing.*;
-import java.beans.*; //Property change stuff
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
 class MyProgressMonitor extends JDialog {
     private JOptionPane optionPane;
@@ -34,47 +35,38 @@ class MyProgressMonitor extends JDialog {
     private String prefix = "";
     private JLabel statusString = new JLabel();
     private JProgressBar progressBar;
-    void setNote(String note) { statusString.setText(prefix + note); }
-    void setPrefix(String s) { prefix = s; }
-    void setProgress(int current) { 
-	//	setNote(current + " out of " + max);
-	progressBar.setValue(current);
-    }
     private ActionListener listener = null;
-
-    public void addActionListener(ActionListener l) { listener = l; }
-    public void setMaximum (int m) { max = m; progressBar.setMaximum(m); }
 
     public MyProgressMonitor(Frame aFrame, String title, String initial, int max) {
         super(aFrame, false);  // doesn't freeze parent frame
-	
-	this.max = max;
+
+        this.max = max;
         setTitle(title);
-	setFocusableWindowState(false);
+        setFocusableWindowState(false);
         progressBar = new JProgressBar(0, max);
         progressBar.setValue(0);
         progressBar.setStringPainted(true);
-	statusString.setText(initial);
+        statusString.setText(initial);
 
         Object[] array = {statusString, progressBar};
         Object[] options = {"Cancel"};
 
-        optionPane = new JOptionPane(array, 
-                                    JOptionPane.INFORMATION_MESSAGE,
-                                    JOptionPane.YES_NO_OPTION,
-                                    null,
-                                    options,
-                                    options[0]);
+        optionPane = new JOptionPane(array,
+                JOptionPane.INFORMATION_MESSAGE,
+                JOptionPane.YES_NO_OPTION,
+                null,
+                options,
+                options[0]);
         setContentPane(optionPane);
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         optionPane.addPropertyChangeListener(new PropertyChangeListener() {
             public void propertyChange(PropertyChangeEvent e) {
                 String prop = e.getPropertyName();
 
-                if (isVisible() 
-                 && (e.getSource() == optionPane)
-                 && (prop.equals(JOptionPane.VALUE_PROPERTY) ||
-                     prop.equals(JOptionPane.INPUT_VALUE_PROPERTY))) {
+                if (isVisible()
+                        && (e.getSource() == optionPane)
+                        && (prop.equals(JOptionPane.VALUE_PROPERTY) ||
+                        prop.equals(JOptionPane.INPUT_VALUE_PROPERTY))) {
                     Object value = optionPane.getValue();
 
                     if (value == JOptionPane.UNINITIALIZED_VALUE) {
@@ -89,11 +81,33 @@ class MyProgressMonitor extends JDialog {
                     optionPane.setValue(
                             JOptionPane.UNINITIALIZED_VALUE);
 
-		    if (listener != null)
-			listener.actionPerformed(new java.awt.event.ActionEvent(this, 0, "Cancel"));
-		    setVisible(false);
-		}
+                    if (listener != null)
+                        listener.actionPerformed(new java.awt.event.ActionEvent(this, 0, "Cancel"));
+                    setVisible(false);
+                }
             }
         });
+    }
+
+    void setNote(String note) {
+        statusString.setText(prefix + note);
+    }
+
+    void setPrefix(String s) {
+        prefix = s;
+    }
+
+    void setProgress(int current) {
+        //	setNote(current + " out of " + max);
+        progressBar.setValue(current);
+    }
+
+    public void addActionListener(ActionListener l) {
+        listener = l;
+    }
+
+    public void setMaximum(int m) {
+        max = m;
+        progressBar.setMaximum(m);
     }
 }

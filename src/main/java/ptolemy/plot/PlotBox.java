@@ -27,56 +27,19 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
-import java.awt.RenderingHints;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.Writer;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.List;
-import java.util.Vector;
-
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
 
 
 // TO DO:
@@ -86,162 +49,574 @@ import javax.swing.SwingUtilities;
 //// PlotBox
 
 /**
-   This class provides a labeled box within which to place a data plot.
-   A title, X and Y axis labels, tick marks, and a legend are all supported.
-   Zooming in and out is supported.  To zoom in, drag the mouse
-   downwards to draw a box.  To zoom out, drag the mouse upward.
-   <p>
-   The box can be configured either through a file with commands or
-   through direct invocation of the public methods of the class.
-   <p>
-   When calling the methods, in most cases the changes will not
-   be visible until paintComponent() has been called.  To request that this
-   be done, call repaint().
-   <p>
-   A small set of key bindings are provided for convenience.
-   They are:
-   <ul>
-   <li> Cntrl-c: Export the plot to the clipboard (in PlotML).
-   <li> D: Dump the plot to standard output (in PlotML).
-   <li> E: Export the plot to standard output in EPS format.
-   <li> F: Fill the plot.
-   <li> H or ?: Display a simple help message.
-   <li> Cntrl-D or Q: quit
-   </ul>
-   These commands are provided in a menu by the PlotFrame class.
-   Note that exporting to the clipboard is not allowed in applets
-   (it used to be), so this will result in an error message.
-   <p>
-   At this time, the two export commands produce encapsulated postscript
-   tuned for black-and-white printers.  In the future, more formats may
-   supported.
-   Exporting to the clipboard and to standard output, in theory,
-   is allowed for applets, unlike writing to a file. Thus, these
-   key bindings provide a simple mechanism to obtain a high-resolution
-   image of the plot from an applet, suitable for incorporation in
-   a document. However, in some browsers, exporting to standard out
-   triggers a security violation.  You can use the JDK appletviewer instead.
-   <p>
-   To read commands from a file or URL, the preferred technique is
-   to use one of the classes in the plotml package.  That package
-   supports both PlotML, an XML extension for plots, and a historical
-   file format specific to ptplot.  The historical file format is
-   understood by the read() method in this class.
-   The syntax of the historical format, documented below, is rudimentary,
-   and will probably not be extended as ptplot evolves.  Nonetheless,
-   we document it here since it is directly supported by this class.
-   <p>
-   The historical format for the file allows any number
-   commands, one per line.  Unrecognized commands and commands with
-   syntax errors are ignored.  Comments are denoted by a line starting
-   with a pound sign "#".  The recognized commands include:
-   <pre>
-   TitleText: <i>string</i>
-   XLabel: <i>string</i>
-   YLabel: <i>string</i>
-   </pre>
-   These commands provide a title and labels for the X (horizontal) and Y
-   (vertical) axes.
-   A <i>string</i> is simply a sequence of characters, possibly
-   including spaces.  There is no need here to surround them with
-   quotation marks, and in fact, if you do, the quotation marks will
-   be included in the labels.
-   <p>
-   The ranges of the X and Y axes can be optionally given by commands like:
-   <pre>
-   XRange: <i>min</i>, <i>max</i>
-   YRange: <i>min</i>, <i>max</i>
-   </pre>
-   The arguments <i>min</i> and <i>max</i> are numbers, possibly
-   including a sign and a decimal point. If they are not specified,
-   then the ranges are computed automatically from the data and padded
-   slightly so that datapoints are not plotted on the axes.
-   <p>
-   The tick marks for the axes are usually computed automatically from
-   the ranges.  Every attempt is made to choose reasonable positions
-   for the tick marks regardless of the data ranges (powers of
-   ten multiplied by 1, 2, or 5 are used).  However, they can also be
-   specified explicitly using commands like:
-   <pre>
-   XTicks: <i>label position, label position, ...</i>
-   YTicks: <i>label position, label position, ...</i>
-   </pre>
-   A <i>label</i> is a string that must be surrounded by quotation
-   marks if it contains any spaces.  A <i>position</i> is a number
-   giving the location of the tick mark along the axis.  For example,
-   a horizontal axis for a frequency domain plot might have tick marks
-   as follows:
-   <pre>
-   XTicks: -PI -3.14159, -PI/2 -1.570795, 0 0, PI/2 1.570795, PI 3.14159
-   </pre>
-   Tick marks could also denote years, months, days of the week, etc.
-   <p>
-   The X and Y axes can use a logarithmic scale with the following commands:
-   <pre>
-   XLog: on
-   YLog: on
-   </pre>
-   The grid labels represent powers of 10.  Note that if a logarithmic
-   scale is used, then the values must be positive.  Non-positive values
-   will be silently dropped.  Note further that when using logarithmic
-   axes that the log of input data is taken as the data is added to the plot.
-   This means that <pre>XLog: on</pre> or <pre>YLog: on</pre> should
-   appear before any data.  Also, the value of the XTicks, YTicks,
-   XRange or YRange directives should be in log units.
-   So, <pre>XTicks: 1K 3</pre> will display the string <pre>1K</pre>
-   at the 1000 mark.
-   <p>
-   By default, tick marks are connected by a light grey background grid.
-   This grid can be turned off with the following command:
-   <pre>
-   Grid: off
-   </pre>
-   It can be turned back on with
-   <pre>
-   Grid: on
-   </pre>
-   Also, by default, the first ten data sets are shown each in a unique color.
-   The use of color can be turned off with the command:
-   <pre>
-   Color: off
-   </pre>
-   It can be turned back on with
-   <pre>
-   Color: on
-   </pre>
-   Finally, the rather specialized command
-   <pre>
-   Wrap: on
-   </pre>
-   enables wrapping of the X (horizontal) axis, which means that if
-   a point is added with X out of range, its X value will be modified
-   modulo the range so that it lies in range. This command only has an
-   effect if the X range has been set explicitly. It is designed specifically
-   to support oscilloscope-like behavior, where the X value of points is
-   increasing, but the display wraps it around to left. A point that lands
-   on the right edge of the X range is repeated on the left edge to give
-   a better sense of continuity. The feature works best when points do land
-   precisely on the edge, and are plotted from left to right, increasing
-   in X.
-   <p>
-   All of the above commands can also be invoked directly by calling the
-   the corresponding public methods from some Java procedure.
-   <p>
-   This class uses features of JDK 1.2, and hence if used in an applet,
-   it can only be viewed by a browser that supports JDK 1.2, or a plugin.
-
-   @author Edward A. Lee, Christopher Hylands, Contributors: Jun Wu (jwu@inin.com.au), William Wu, Robert Kroeger
-
-   @version $Id: PlotBox.java,v 1.269.2.1 2005/07/28 17:19:36 cxh Exp $
-   @since Ptolemy II 0.2
-   @Pt.ProposedRating Yellow (cxh)
-   @Pt.AcceptedRating Yellow (cxh)
-*/
+ * This class provides a labeled box within which to place a data plot.
+ * A title, X and Y axis labels, tick marks, and a legend are all supported.
+ * Zooming in and out is supported.  To zoom in, drag the mouse
+ * downwards to draw a box.  To zoom out, drag the mouse upward.
+ * <p>
+ * The box can be configured either through a file with commands or
+ * through direct invocation of the public methods of the class.
+ * <p>
+ * When calling the methods, in most cases the changes will not
+ * be visible until paintComponent() has been called.  To request that this
+ * be done, call repaint().
+ * <p>
+ * A small set of key bindings are provided for convenience.
+ * They are:
+ * <ul>
+ * <li> Cntrl-c: Export the plot to the clipboard (in PlotML).
+ * <li> D: Dump the plot to standard output (in PlotML).
+ * <li> E: Export the plot to standard output in EPS format.
+ * <li> F: Fill the plot.
+ * <li> H or ?: Display a simple help message.
+ * <li> Cntrl-D or Q: quit
+ * </ul>
+ * These commands are provided in a menu by the PlotFrame class.
+ * Note that exporting to the clipboard is not allowed in applets
+ * (it used to be), so this will result in an error message.
+ * <p>
+ * At this time, the two export commands produce encapsulated postscript
+ * tuned for black-and-white printers.  In the future, more formats may
+ * supported.
+ * Exporting to the clipboard and to standard output, in theory,
+ * is allowed for applets, unlike writing to a file. Thus, these
+ * key bindings provide a simple mechanism to obtain a high-resolution
+ * image of the plot from an applet, suitable for incorporation in
+ * a document. However, in some browsers, exporting to standard out
+ * triggers a security violation.  You can use the JDK appletviewer instead.
+ * <p>
+ * To read commands from a file or URL, the preferred technique is
+ * to use one of the classes in the plotml package.  That package
+ * supports both PlotML, an XML extension for plots, and a historical
+ * file format specific to ptplot.  The historical file format is
+ * understood by the read() method in this class.
+ * The syntax of the historical format, documented below, is rudimentary,
+ * and will probably not be extended as ptplot evolves.  Nonetheless,
+ * we document it here since it is directly supported by this class.
+ * <p>
+ * The historical format for the file allows any number
+ * commands, one per line.  Unrecognized commands and commands with
+ * syntax errors are ignored.  Comments are denoted by a line starting
+ * with a pound sign "#".  The recognized commands include:
+ * <pre>
+ * TitleText: <i>string</i>
+ * XLabel: <i>string</i>
+ * YLabel: <i>string</i>
+ * </pre>
+ * These commands provide a title and labels for the X (horizontal) and Y
+ * (vertical) axes.
+ * A <i>string</i> is simply a sequence of characters, possibly
+ * including spaces.  There is no need here to surround them with
+ * quotation marks, and in fact, if you do, the quotation marks will
+ * be included in the labels.
+ * <p>
+ * The ranges of the X and Y axes can be optionally given by commands like:
+ * <pre>
+ * XRange: <i>min</i>, <i>max</i>
+ * YRange: <i>min</i>, <i>max</i>
+ * </pre>
+ * The arguments <i>min</i> and <i>max</i> are numbers, possibly
+ * including a sign and a decimal point. If they are not specified,
+ * then the ranges are computed automatically from the data and padded
+ * slightly so that datapoints are not plotted on the axes.
+ * <p>
+ * The tick marks for the axes are usually computed automatically from
+ * the ranges.  Every attempt is made to choose reasonable positions
+ * for the tick marks regardless of the data ranges (powers of
+ * ten multiplied by 1, 2, or 5 are used).  However, they can also be
+ * specified explicitly using commands like:
+ * <pre>
+ * XTicks: <i>label position, label position, ...</i>
+ * YTicks: <i>label position, label position, ...</i>
+ * </pre>
+ * A <i>label</i> is a string that must be surrounded by quotation
+ * marks if it contains any spaces.  A <i>position</i> is a number
+ * giving the location of the tick mark along the axis.  For example,
+ * a horizontal axis for a frequency domain plot might have tick marks
+ * as follows:
+ * <pre>
+ * XTicks: -PI -3.14159, -PI/2 -1.570795, 0 0, PI/2 1.570795, PI 3.14159
+ * </pre>
+ * Tick marks could also denote years, months, days of the week, etc.
+ * <p>
+ * The X and Y axes can use a logarithmic scale with the following commands:
+ * <pre>
+ * XLog: on
+ * YLog: on
+ * </pre>
+ * The grid labels represent powers of 10.  Note that if a logarithmic
+ * scale is used, then the values must be positive.  Non-positive values
+ * will be silently dropped.  Note further that when using logarithmic
+ * axes that the log of input data is taken as the data is added to the plot.
+ * This means that <pre>XLog: on</pre> or <pre>YLog: on</pre> should
+ * appear before any data.  Also, the value of the XTicks, YTicks,
+ * XRange or YRange directives should be in log units.
+ * So, <pre>XTicks: 1K 3</pre> will display the string <pre>1K</pre>
+ * at the 1000 mark.
+ * <p>
+ * By default, tick marks are connected by a light grey background grid.
+ * This grid can be turned off with the following command:
+ * <pre>
+ * Grid: off
+ * </pre>
+ * It can be turned back on with
+ * <pre>
+ * Grid: on
+ * </pre>
+ * Also, by default, the first ten data sets are shown each in a unique color.
+ * The use of color can be turned off with the command:
+ * <pre>
+ * Color: off
+ * </pre>
+ * It can be turned back on with
+ * <pre>
+ * Color: on
+ * </pre>
+ * Finally, the rather specialized command
+ * <pre>
+ * Wrap: on
+ * </pre>
+ * enables wrapping of the X (horizontal) axis, which means that if
+ * a point is added with X out of range, its X value will be modified
+ * modulo the range so that it lies in range. This command only has an
+ * effect if the X range has been set explicitly. It is designed specifically
+ * to support oscilloscope-like behavior, where the X value of points is
+ * increasing, but the display wraps it around to left. A point that lands
+ * on the right edge of the X range is repeated on the left edge to give
+ * a better sense of continuity. The feature works best when points do land
+ * precisely on the edge, and are plotted from left to right, increasing
+ * in X.
+ * <p>
+ * All of the above commands can also be invoked directly by calling the
+ * the corresponding public methods from some Java procedure.
+ * <p>
+ * This class uses features of JDK 1.2, and hence if used in an applet,
+ * it can only be viewed by a browser that supports JDK 1.2, or a plugin.
+ *
+ * @author Edward A. Lee, Christopher Hylands, Contributors: Jun Wu (jwu@inin.com.au), William Wu, Robert Kroeger
+ * @version $Id: PlotBox.java,v 1.269.2.1 2005/07/28 17:19:36 cxh Exp $
+ * @Pt.ProposedRating Yellow (cxh)
+ * @Pt.AcceptedRating Yellow (cxh)
+ * @since Ptolemy II 0.2
+ */
 public class PlotBox extends JPanel implements Printable {
     ///////////////////////////////////////////////////////////////////
     ////                         constructor                       ////
 
-    /** Construct a plot box with a default configuration. */
+    ///////////////////////////////////////////////////////////////////
+    ////                         public variables                  ////
+    public static final String PTPLOT_RELEASE = "5.5";
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         public methods                    ////
+    // For use in calculating log base 10. A log times this is a log base 10.
+    protected static final double _LOG10SCALE = 1 / Math.log(10);
+    // Call setXORMode with a hardwired color because
+    // _background does not work in an application,
+    // and _foreground does not work in an applet.
+    // NOTE: For some reason, this comes out blue, which is fine...
+    private static final Color _boxColor = Color.orange;
+    // Default _colors, by data set.
+    // There are 11 colors so that combined with the
+    // 10 marks of the Plot class, we can distinguish 110
+    // distinct data sets.
+    static protected Color[] _colors = {
+            new Color(0xff0000), // red
+            new Color(0x0000ff), // blue
+            new Color(0x00aaaa), // cyan-ish
+            new Color(0x000000), // black
+            new Color(0xffa500), // orange
+            new Color(0x53868b), // cadetblue4
+            new Color(0xff7f50), // coral
+            new Color(0x45ab1f), // dark green-ish
+            new Color(0x90422d), // sienna-ish
+            new Color(0xa0a0a0), // grey-ish
+            new Color(0x14ff14), // green-ish
+    };
+    /**
+     * @serial Top padding.
+     * Derived classes can increment these to make space around the plot.
+     */
+    /* Steven Phillips replaced "protected" with "public" from the next four */
+    public int _topPadding = 10;
+    /**
+     * @serial Bottom padding.
+     * Derived classes can increment these to make space around the plot.
+     */
+    public int _bottomPadding = 5;
+    /**
+     * @serial Right padding.
+     * Derived classes can increment these to make space around the plot.
+     */
+    public int _rightPadding = 10;
+    /**
+     * @serial Left padding.
+     * Derived classes can increment these to make space around the plot.
+     */
+    public int _leftPadding = 10;
+
+    // CONTRIBUTED CODE.
+    // I wanted the ability to use the Plot object in a servlet and to
+    // write out the resultant images. The following routines,
+    // particularly exportImage(), permit this. I also had to make some
+    // minor changes elsewhere. Rob Kroeger, May 2001.
+    // NOTE: This code has been modified by EAL to conform with Ptolemy II
+    // coding style.
+    /**
+     * @serial The document base we use to find the _filespec.
+     * NOTE: Use of this variable is deprecated.  But it is made available
+     * to derived classes for backward compatibility.
+     * FIXME: Sun's appletviewer gives an exception if this is protected.
+     * Why?? So we make it temporarily public.
+     */
+    public URL _documentBase = null;
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected variables               ////
+    // The range of the data to be plotted.
+    protected transient double _yMax = 0;
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected variables               ////
+    // The range of the data to be plotted.
+    protected transient double _yMin = 0;
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected variables               ////
+    // The range of the data to be plotted.
+    protected transient double _xMax = 0;
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected variables               ////
+    // The range of the data to be plotted.
+    protected transient double _xMin = 0;
+    /**
+     * The factor we pad by so that we don't plot points on the axes.
+     */
+    protected double _padding = 0.05;
+    // Whether the ranges have been given.
+    protected transient boolean _xRangeGiven = false;
+    protected transient boolean _yRangeGiven = false;
+    protected transient boolean _rangesGivenByZooming = false;
+    /**
+     * @serial The given X and Y ranges.
+     * If they have been given the top and bottom of the x and y ranges.
+     * This is different from _xMin and _xMax, which actually represent
+     * the range of data that is plotted.  This represents the range
+     * specified (which may be different due to zooming).
+     */
+    protected double _xlowgiven;
+    /**
+     * @serial The given X and Y ranges.
+     * If they have been given the top and bottom of the x and y ranges.
+     * This is different from _xMin and _xMax, which actually represent
+     * the range of data that is plotted.  This represents the range
+     * specified (which may be different due to zooming).
+     */
+    protected double _xhighgiven;
+    /**
+     * @serial The given X and Y ranges.
+     * If they have been given the top and bottom of the x and y ranges.
+     * This is different from _xMin and _xMax, which actually represent
+     * the range of data that is plotted.  This represents the range
+     * specified (which may be different due to zooming).
+     */
+    protected double _ylowgiven;
+    /**
+     * @serial The given X and Y ranges.
+     * If they have been given the top and bottom of the x and y ranges.
+     * This is different from _xMin and _xMax, which actually represent
+     * the range of data that is plotted.  This represents the range
+     * specified (which may be different due to zooming).
+     */
+    protected double _yhighgiven;
+
+    /** If the size of the plot has been set by setSize(),
+     *  then return that size.  Otherwise, return what the superclass
+     *  returns (which is undocumented, but apparently imposes no maximum size).
+     *  Currently (JDK 1.3), only BoxLayout pays any attention to this.
+     *  @return The maximum desired size.
+     */
+
+    //     public synchronized Dimension getMaximumSize() {
+    //         if (_sizeHasBeenSet) {
+    //             return new Dimension(_preferredWidth, _preferredHeight);
+    //         } else {
+    //             return super.getMaximumSize();
+    //         }
+    //     }
+
+    /** Get the minimum size of this component.
+     *  This is simply the dimensions specified by setSize(),
+     *  if this has been called.  Otherwise, return whatever the base
+     *  class returns, which is undocumented.
+     *  @return The minimum size.
+     */
+
+    //     public synchronized Dimension getMinimumSize() {
+    //         if (_sizeHasBeenSet) {
+    //             return new Dimension(_preferredWidth, _preferredHeight);
+    //         } else {
+    //             return super.getMinimumSize();
+    //         }
+    //     }
+    /**
+     * @serial The minimum X value registered so for, for auto ranging.
+     */
+    protected double _xBottom = Double.MAX_VALUE;
+    /**
+     * @serial The maximum X value registered so for, for auto ranging.
+     */
+    protected double _xTop = -Double.MAX_VALUE;
+    /**
+     * @serial The minimum Y value registered so for, for auto ranging.
+     */
+    protected double _yBottom = Double.MAX_VALUE;
+    /**
+     * @serial The maximum Y value registered so for, for auto ranging.
+     */
+    protected double _yTop = -Double.MAX_VALUE;
+    /**
+     * @serial Whether to draw the axes using a logarithmic scale.
+     */
+    protected boolean _xlog = false;
+    /**
+     * @serial Whether to draw the axes using a logarithmic scale.
+     */
+    protected boolean _ylog = false;
+    /**
+     * @serial Whether to draw a background grid.
+     */
+    protected boolean _grid = true;
+    /**
+     * @serial Whether to wrap the X axis.
+     */
+    protected boolean _wrap = false;
+    /**
+     * @serial The high range of the X axis for wrapping.
+     */
+    protected double _wrapHigh;
+    /**
+     * @serial The low range of the X axis for wrapping.
+     */
+    protected double _wrapLow;
+    /**
+     * @serial Color of the background, settable from HTML.
+     */
+    protected Color _background = Color.white;
+    /**
+     * @serial Color of the foreground, settable from HTML.
+     */
+    protected Color _foreground = Color.black;
+    /**
+     * The x value of the upper left corner of the plot rectangle in pixels.
+     */
+    protected int _ulx = 1;
+    /**
+     * The y value of the upper left corner of the plot rectangle in pixels.
+     */
+    protected int _uly = 1;
+    /**
+     * The x value of the lower right corner of
+     * the plot rectangle in pixels.
+     */
+    protected int _lrx = 100;
+    /**
+     * The y value of the lower right corner of
+     * the plot rectangle in pixels.
+     */
+    protected int _lry = 100;
+    /**
+     * User specified plot rectangle, null if none specified.
+     *
+     * @see #setPlotRectangle(Rectangle)
+     */
+    protected Rectangle _specifiedPlotRectangle = null;
+    /**
+     * Scaling used for the vertical axis in plotting points.
+     * The units are pixels/unit, where unit is the units of the Y axis.
+     */
+    protected double _yscale = 1.0;
+    /**
+     * Scaling used for the horizontal axis in plotting points.
+     * The units are pixels/unit, where unit is the units of the X axis.
+     */
+    protected double _xscale = 1.0;
+    /**
+     * @serial Indicator whether to use _colors.
+     */
+    protected boolean _usecolor = true;
+    /**
+     * @serial Width and height of component in pixels.
+     */
+    protected int _width = 500;
+    /**
+     * @serial Width and height of component in pixels.
+     */
+    protected int _height = 300;
+    /**
+     * @serial Width and height of component in pixels.
+     */
+    protected int _preferredWidth = 500;
+    /**
+     * @serial Width and height of component in pixels.
+     */
+    protected int _preferredHeight = 300;
+    // An offscreen buffer for improving plot performance.
+    protected transient BufferedImage _plotImage = null;
+    // Indicator of whether X and Y range has been first specified.
+    boolean _originalXRangeGiven = false;
+    // Indicator of whether X and Y range has been first specified.
+    boolean _originalYRangeGiven = false;
+    // First values specified to setXRange() and setYRange().
+    double _originalXlow = 0.0;
+    // First values specified to setXRange() and setYRange().
+    double _originalXhigh = 0.0;
+    // First values specified to setXRange() and setYRange().
+    double _originalYlow = 0.0;
+    // First values specified to setXRange() and setYRange().
+    double _originalYhigh = 0.0;
+    /**
+     * @serial Indicator of whether actions are deferred.
+     */
+    private boolean _actionsDeferred = false;
+    /**
+     * @serial List of deferred actions.
+     */
+    private List _deferredActions;
+    /**
+     * @serial The file to be opened.
+     */
+    private String _filespec = null;
+    /**
+     * @serial The range of the plot as labeled
+     * (multiply by 10^exp for actual range.
+     */
+    private double _ytickMax = 0.0;
+    /**
+     * @serial The range of the plot as labeled
+     * (multiply by 10^exp for actual range.
+     */
+    private double _ytickMin = 0.0;
+    /**
+     * @serial The range of the plot as labeled
+     * (multiply by 10^exp for actual range.
+     */
+    private double _xtickMax = 0.0;
+    /**
+     * @serial The range of the plot as labeled
+     * (multiply by 10^exp for actual range.
+     */
+    private double _xtickMin = 0.0;
+    /**
+     * @serial The power of ten by which the range numbers should
+     * be multiplied.
+     */
+    private int _yExp = 0;
+    /**
+     * @serial The power of ten by which the range numbers should
+     * be multiplied.
+     */
+    private int _xExp = 0;
+    /**
+     * @serial Scaling used in making tick marks.
+     */
+    private double _ytickscale = 0.0;
+    /**
+     * @serial Scaling used in making tick marks.
+     */
+    private double _xtickscale = 0.0;
+    /**
+     * @serial Font information.
+     */
+    private Font _labelFont = null;
+    /**
+     * @serial Font information.
+     */
+    private Font _superscriptFont = null;
+    /**
+     * @serial Font information.
+     */
+    private Font _titleFont = null;
+    /**
+     * @serial FontMetric information.
+     */
+    private FontMetrics _labelFontMetrics = null;
+    /**
+     * @serial FontMetric information.
+     */
+    private FontMetrics _superscriptFontMetrics = null;
+    /**
+     * @serial FontMetric information.
+     */
+    private FontMetrics _titleFontMetrics = null;
+    // Number format cache used by _formatNum.
+    // See the comment in _formatNum for more information.
+    // private transient NumberFormat _numberFormat = null;
+    // Used for log axes. Index into vector of axis labels.
+    private transient int _gridCurJuke = 0;
+    // Used for log axes.  Base of the grid.
+    private transient double _gridBase = 0.0;
+    // An array of strings for reporting errors.
+    private transient String[] _errorMsg;
+    /**
+     * @serial The title and label strings.
+     */
+    private String _xlabel;
+    /**
+     * @serial The title and label strings.
+     */
+    private String _ylabel;
+    /**
+     * @serial The title and label strings.
+     */
+    private String _title;
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected methods                 ////
+    /**
+     * @serial Legend information.
+     */
+    private Vector _legendStrings = new Vector();
+    /**
+     * @serial Legend information.
+     */
+    private Vector _legendDatasets = new Vector();
+    /**
+     * @serial If XTicks or YTicks are given/
+     */
+    private Vector _xticks = null;
+    /**
+     * @serial If XTicks or YTicks are given/
+     */
+    private Vector _xticklabels = null;
+    /**
+     * @serial If XTicks or YTicks are given/
+     */
+    private Vector _yticks = null;
+    /**
+     * @serial If XTicks or YTicks are given/
+     */
+    private Vector _yticklabels = null;
+    // A button for filling the plot
+    private transient JButton _fillButton = null;
+    // A button for formatting the plot
+    private transient JButton _formatButton = null;
+    // A button for printing the plot
+    private transient JButton _printButton = null;
+    // A button for filling the plot
+    private transient JButton _resetButton = null;
+    // Variables keeping track of the interactive zoom box.
+    // Initialize to impossible values.
+    private transient int _zoomx = -1;
+    private transient int _zoomy = -1;
+    private transient int _zoomxn = -1;
+    private transient int _zoomyn = -1;
+    // Control whether we are zooming in or out.
+    private transient boolean _zoomin = false;
+    private transient boolean _zoomout = false;
+    private transient boolean _drawn = false;
+    private transient boolean _zooming = false;
+
+    /**
+     * Construct a plot box with a default configuration.
+     */
     public PlotBox() {
         // If we make this transparent, the background shows through.
         // However, we assume that the user will set the background.
@@ -263,16 +638,73 @@ public class PlotBox extends JPanel implements Printable {
         // requestFocus();
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         public methods                    ////
+    /**
+     * Convert a color name into a Color. Currently, only a very limited
+     * set of color names is supported: black, white, red, green, and blue.
+     *
+     * @param name A color name, or null if not found.
+     * @return An instance of Color.
+     */
+    public static Color getColorByName(String name) {
+        try {
+            // Check to see if it is a hexadecimal
+            if (name.startsWith("#")) {
+                name = name.substring(1);
+            }
 
-    /** Add a legend (displayed at the upper right) for the specified
-     *  data set with the specified string.  Short strings generally
-     *  fit better than long strings.  If the string is empty, or the
-     *  argument is null, then no legend is added.
-     *  @param dataset The dataset index.
-     *  @param legend The label for the dataset.
-     *  @see #renameLegend(int, String)
+            Color col = new Color(Integer.parseInt(name, 16));
+            return col;
+        } catch (NumberFormatException e) {
+        }
+
+        // FIXME: This is a poor excuse for a list of colors and values.
+        // We should use a hash table here.
+        // Note that Color decode() wants the values to start with 0x.
+        String[][] names = {
+                {
+                        "black",
+                        "00000"
+                },
+                {
+                        "white",
+                        "ffffff"
+                },
+                {
+                        "red",
+                        "ff0000"
+                },
+                {
+                        "green",
+                        "00ff00"
+                },
+                {
+                        "blue",
+                        "0000ff"
+                }
+        };
+
+        for (int i = 0; i < names.length; i++) {
+            if (name.equals(names[i][0])) {
+                try {
+                    Color col = new Color(Integer.parseInt(names[i][1], 16));
+                    return col;
+                } catch (NumberFormatException e) {
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Add a legend (displayed at the upper right) for the specified
+     * data set with the specified string.  Short strings generally
+     * fit better than long strings.  If the string is empty, or the
+     * argument is null, then no legend is added.
+     *
+     * @param dataset The dataset index.
+     * @param legend  The label for the dataset.
+     * @see #renameLegend(int, String)
      */
     public synchronized void addLegend(int dataset, String legend) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -286,13 +718,15 @@ public class PlotBox extends JPanel implements Printable {
         _legendDatasets.addElement(new Integer(dataset));
     }
 
-    /** Specify a tick mark for the X axis.  The label given is placed
-     *  on the axis at the position given by <i>position</i>. If this
-     *  is called once or more, automatic generation of tick marks is
-     *  disabled.  The tick mark will appear only if it is within the X
-     *  range.
-     *  @param label The label for the tick mark.
-     *  @param position The position on the X axis.
+    /**
+     * Specify a tick mark for the X axis.  The label given is placed
+     * on the axis at the position given by <i>position</i>. If this
+     * is called once or more, automatic generation of tick marks is
+     * disabled.  The tick mark will appear only if it is within the X
+     * range.
+     *
+     * @param label    The label for the tick mark.
+     * @param position The position on the X axis.
      */
     public synchronized void addXTick(String label, double position) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -307,13 +741,15 @@ public class PlotBox extends JPanel implements Printable {
         _xticklabels.addElement(label);
     }
 
-    /** Specify a tick mark for the Y axis.  The label given is placed
-     *  on the axis at the position given by <i>position</i>. If this
-     *  is called once or more, automatic generation of tick marks is
-     *  disabled.  The tick mark will appear only if it is within the Y
-     *  range.
-     *  @param label The label for the tick mark.
-     *  @param position The position on the Y axis.
+    /**
+     * Specify a tick mark for the Y axis.  The label given is placed
+     * on the axis at the position given by <i>position</i>. If this
+     * is called once or more, automatic generation of tick marks is
+     * disabled.  The tick mark will appear only if it is within the Y
+     * range.
+     *
+     * @param label    The label for the tick mark.
+     * @param position The position on the Y axis.
      */
     public synchronized void addYTick(String label, double position) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -328,11 +764,13 @@ public class PlotBox extends JPanel implements Printable {
         _yticklabels.addElement(label);
     }
 
-    /** If the argument is true, clear the axes.  I.e., set all parameters
-     *  controlling the axes to their initial conditions.
-     *  For the change to take effect, call repaint().  If the argument
-     *  is false, do nothing.
-     *  @param axes If true, clear the axes parameters.
+    /**
+     * If the argument is true, clear the axes.  I.e., set all parameters
+     * controlling the axes to their initial conditions.
+     * For the change to take effect, call repaint().  If the argument
+     * is false, do nothing.
+     *
+     * @param axes If true, clear the axes parameters.
      */
     public synchronized void clear(boolean axes) {
         // We need to repaint the offscreen buffer.
@@ -374,7 +812,8 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    /** Clear all legends.  This will show up on the next redraw.
+    /**
+     * Clear all legends.  This will show up on the next redraw.
      */
     public synchronized void clearLegends() {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -384,19 +823,21 @@ public class PlotBox extends JPanel implements Printable {
         _legendDatasets = new Vector();
     }
 
-    /** If this method is called in the event thread, then simply
+    /**
+     * If this method is called in the event thread, then simply
      * execute the specified action.  Otherwise,
      * if there are already deferred actions, then add the specified
      * one to the list.  Otherwise, create a list of deferred actions,
      * if necessary, and request that the list be processed in the
      * event dispatch thread.
-     *
+     * <p>
      * Note that it does not work nearly as well to simply schedule
      * the action yourself on the event thread because if there are a
      * large number of actions, then the event thread will not be able
      * to keep up.  By grouping these actions, we avoid this problem.
-     *
+     * <p>
      * This method is not synchronized, so the caller should be.
+     *
      * @param action The Runnable object to execute.
      */
     public void deferIfNecessary(Runnable action) {
@@ -417,10 +858,10 @@ public class PlotBox extends JPanel implements Printable {
             // be performed in the event dispatch thread.
             if (!_actionsDeferred) {
                 Runnable doActions = new Runnable() {
-                        public void run() {
-                            _executeDeferredActions();
-                        }
-                    };
+                    public void run() {
+                        _executeDeferredActions();
+                    }
+                };
 
                 try {
                     // NOTE: Using invokeAndWait() here risks causing
@@ -436,14 +877,16 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    /** Export a description of the plot.
-     *  Currently, only EPS is supported.  But in the future, this
-     *  may cause a dialog box to open to allow the user to select
-     *  a format.  If the argument is null, then the description goes
-     *  to the clipboard.  Otherwise, it goes to the specified file.
-     *  To send it to standard output, use
-     *  <code>System.out</code> as an argument.
-     *  @param out An output stream to which to send the description.
+    /**
+     * Export a description of the plot.
+     * Currently, only EPS is supported.  But in the future, this
+     * may cause a dialog box to open to allow the user to select
+     * a format.  If the argument is null, then the description goes
+     * to the clipboard.  Otherwise, it goes to the specified file.
+     * To send it to standard output, use
+     * <code>System.out</code> as an argument.
+     *
+     * @param out An output stream to which to send the description.
      */
     public synchronized void export(OutputStream out) {
         try {
@@ -461,58 +904,56 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    // CONTRIBUTED CODE.
-    // I wanted the ability to use the Plot object in a servlet and to
-    // write out the resultant images. The following routines,
-    // particularly exportImage(), permit this. I also had to make some
-    // minor changes elsewhere. Rob Kroeger, May 2001.
-    // NOTE: This code has been modified by EAL to conform with Ptolemy II
-    // coding style.
-
-    /** Create a BufferedImage and draw this plot to it.
-     *  The size of the returned image matches the current size of the plot.
-     *  This method can be used, for
-     *  example, by a servlet to produce an image, rather than
-     *  requiring an applet to instantiate a PlotBox.
-     *  @return An image filled by the plot.
+    /**
+     * Create a BufferedImage and draw this plot to it.
+     * The size of the returned image matches the current size of the plot.
+     * This method can be used, for
+     * example, by a servlet to produce an image, rather than
+     * requiring an applet to instantiate a PlotBox.
+     *
+     * @return An image filled by the plot.
      */
     public synchronized BufferedImage exportImage() {
         Rectangle rectangle = new Rectangle(_preferredWidth, _preferredHeight);
         return exportImage(new BufferedImage(rectangle.width, rectangle.height,
-                                   BufferedImage.TYPE_INT_ARGB), rectangle,
+                        BufferedImage.TYPE_INT_ARGB), rectangle,
                 _defaultImageRenderingHints(), false);
     }
 
-    /** Create a BufferedImage the size of the given rectangle and draw
-     *  this plot to it at the position specified by the rectangle.
-     *  The plot is rendered using anti-aliasing.
-     *  @param rectangle The size of the plot. This method can be used, for
-     *  example, by a servlet to produce an image, rather than
-     *  requiring an applet to instantiate a PlotBox.
-     *  @return An image containing the plot.
+    /**
+     * Create a BufferedImage the size of the given rectangle and draw
+     * this plot to it at the position specified by the rectangle.
+     * The plot is rendered using anti-aliasing.
+     *
+     * @param rectangle The size of the plot. This method can be used, for
+     *                  example, by a servlet to produce an image, rather than
+     *                  requiring an applet to instantiate a PlotBox.
+     * @return An image containing the plot.
      */
     public synchronized BufferedImage exportImage(Rectangle rectangle) {
         return exportImage(new BufferedImage(rectangle.width, rectangle.height,
-                                   BufferedImage.TYPE_INT_ARGB), rectangle,
+                        BufferedImage.TYPE_INT_ARGB), rectangle,
                 _defaultImageRenderingHints(), false);
     }
 
-    /** Draw this plot onto the specified image at the position of the
-     *  specified rectangle with the size of the specified rectangle.
-     *  The plot is rendered using anti-aliasing.
-     *  This can be used to paint a number of different
-     *  plots onto a single buffered image.  This method can be used, for
-     *  example, by a servlet to produce an image, rather than
-     *  requiring an applet to instantiate a PlotBox.
-     *  @param bufferedImage Image onto which the plot is drawn.
-     *  @param rectangle The size and position of the plot in the image.
-     *  @param hints Rendering hints for this plot.
-     *  @param transparent Indicator that the background of the plot
-     *   should not be painted.
-     *  @return The modified bufferedImage.
+    /**
+     * Draw this plot onto the specified image at the position of the
+     * specified rectangle with the size of the specified rectangle.
+     * The plot is rendered using anti-aliasing.
+     * This can be used to paint a number of different
+     * plots onto a single buffered image.  This method can be used, for
+     * example, by a servlet to produce an image, rather than
+     * requiring an applet to instantiate a PlotBox.
+     *
+     * @param bufferedImage Image onto which the plot is drawn.
+     * @param rectangle     The size and position of the plot in the image.
+     * @param hints         Rendering hints for this plot.
+     * @param transparent   Indicator that the background of the plot
+     *                      should not be painted.
+     * @return The modified bufferedImage.
      */
     public synchronized BufferedImage exportImage(BufferedImage bufferedImage,
-            Rectangle rectangle, RenderingHints hints, boolean transparent) {
+                                                  Rectangle rectangle, RenderingHints hints, boolean transparent) {
         Graphics2D graphics = bufferedImage.createGraphics();
         graphics.addRenderingHints(_defaultImageRenderingHints());
 
@@ -525,16 +966,18 @@ public class PlotBox extends JPanel implements Printable {
         return bufferedImage;
     }
 
-    /**        Draw this plot onto the provided image.
-     *  This method does not paint the background, so the plot is
-     *  transparent.  The plot fills the image, and is rendered
-     *  using anti-aliasing.  This method can be used to overlay
-     *  multiple plots on the same image, although you must use care
-     *  to ensure that the axes and other labels are identical.
-     *  Hence, it is usually better to simply combine data sets into
-     *  a single plot.
-     *  @param bufferedImage The image onto which to render the plot.
-     *  @return The modified bufferedImage.
+    /**
+     * Draw this plot onto the provided image.
+     * This method does not paint the background, so the plot is
+     * transparent.  The plot fills the image, and is rendered
+     * using anti-aliasing.  This method can be used to overlay
+     * multiple plots on the same image, although you must use care
+     * to ensure that the axes and other labels are identical.
+     * Hence, it is usually better to simply combine data sets into
+     * a single plot.
+     *
+     * @param bufferedImage The image onto which to render the plot.
+     * @return The modified bufferedImage.
      */
     public synchronized BufferedImage exportImage(BufferedImage bufferedImage) {
         return exportImage(bufferedImage,
@@ -542,12 +985,13 @@ public class PlotBox extends JPanel implements Printable {
                 _defaultImageRenderingHints(), true);
     }
 
-    /** Rescale so that the data that is currently plotted just fits.
-     *  This is done based on the protected variables _xBottom, _xTop,
-     *  _yBottom, and _yTop.  It is up to derived classes to ensure that
-     *  variables are valid.
-     *  This method calls repaint(), which eventually causes the display
-     *  to be updated.
+    /**
+     * Rescale so that the data that is currently plotted just fits.
+     * This is done based on the protected variables _xBottom, _xTop,
+     * _yBottom, and _yTop.  It is up to derived classes to ensure that
+     * variables are valid.
+     * This method calls repaint(), which eventually causes the display
+     * to be updated.
      */
     public synchronized void fillPlot() {
         // NOTE: These used to be _setXRange() and _setYRange() to avoid
@@ -563,104 +1007,123 @@ public class PlotBox extends JPanel implements Printable {
         // requestFocus();
     }
 
-    /** Return whether the plot uses color.
-     *  @return True if the plot uses color.
+    /**
+     * Return whether the plot uses color.
+     *
+     * @return True if the plot uses color.
      */
     public boolean getColor() {
         return _usecolor;
     }
 
-    /** Get the point colors.
-     *  @return Array of colors
-     *  @see #setColors(Color[])
+    /**
+     * If the argument is false, draw the plot without using color
+     * (in black and white).  Otherwise, draw it in color (the default).
+     *
+     * @param useColor False to draw in back and white.
+     */
+    public synchronized void setColor(boolean useColor) {
+        // Changing legend means we need to repaint the offscreen buffer.
+        _plotImage = null;
+
+        _usecolor = useColor;
+    }
+
+    /**
+     * Get the point colors.
+     *
+     * @return Array of colors
+     * @see #setColors(Color[])
      */
     public Color[] getColors() {
         return _colors;
     }
 
-    /** Convert a color name into a Color. Currently, only a very limited
-     *  set of color names is supported: black, white, red, green, and blue.
-     *  @param name A color name, or null if not found.
-     *  @return An instance of Color.
+    /**
+     * Set the point colors.  Note that the default colors have been
+     * carefully selected to maximize readability and that it is easy
+     * to use colors that result in a very ugly plot.
+     *
+     * @param colors Array of colors to use in succession for data sets.
+     * @see #getColors()
      */
-    public static Color getColorByName(String name) {
-        try {
-            // Check to see if it is a hexadecimal
-            if (name.startsWith("#")) {
-                name = name.substring(1);
-            }
+    public synchronized void setColors(Color[] colors) {
+        // Changing legend means we need to repaint the offscreen buffer.
+        _plotImage = null;
 
-            Color col = new Color(Integer.parseInt(name, 16));
-            return col;
-        } catch (NumberFormatException e) {
-        }
-
-        // FIXME: This is a poor excuse for a list of colors and values.
-        // We should use a hash table here.
-        // Note that Color decode() wants the values to start with 0x.
-        String[][] names = {
-            {
-                "black",
-                "00000"
-            },
-            {
-                "white",
-                "ffffff"
-            },
-            {
-                "red",
-                "ff0000"
-            },
-            {
-                "green",
-                "00ff00"
-            },
-            {
-                "blue",
-                "0000ff"
-            }
-        };
-
-        for (int i = 0; i < names.length; i++) {
-            if (name.equals(names[i][0])) {
-                try {
-                    Color col = new Color(Integer.parseInt(names[i][1], 16));
-                    return col;
-                } catch (NumberFormatException e) {
-                }
-            }
-        }
-
-        return null;
+        _colors = colors;
     }
 
-    /** Get the file specification that was given by setDataurl.
-     *  This method is deprecated.  Use read() instead.
-     *  @deprecated
+    /**
+     * Get the file specification that was given by setDataurl.
+     * This method is deprecated.  Use read() instead.
+     *
+     * @deprecated
      */
     public String getDataurl() {
         return _filespec;
     }
 
-    /** Get the document base that was set by setDocumentBase.
-     *  This method is deprecated.  Use read() instead.
-     *  @deprecated
+    // The naming convention is: "_ulx" = "upper left x", where "x" is
+    // the horizontal dimension.
+
+    /**
+     * Set the file to read when init() is called.
+     * This method is deprecated.  Use read() instead.
+     *
+     * @deprecated
+     */
+    public void setDataurl(String filespec) {
+        _filespec = filespec;
+    }
+
+    /**
+     * Get the document base that was set by setDocumentBase.
+     * This method is deprecated.  Use read() instead.
+     *
+     * @deprecated
      */
     public URL getDocumentBase() {
         return _documentBase;
     }
 
-    /** Return whether the grid is drawn.
-     *  @return True if a grid is drawn.
+    /**
+     * Set the document base to used when init() is called to read a URL.
+     * This method is deprecated.  Use read() instead.
+     *
+     * @deprecated
+     */
+    public void setDocumentBase(URL documentBase) {
+        _documentBase = documentBase;
+    }
+
+    /**
+     * Return whether the grid is drawn.
+     *
+     * @return True if a grid is drawn.
      */
     public boolean getGrid() {
         return _grid;
     }
 
-    /** Get the legend for a dataset, or null if there is none.
-     *  The legend would have been set by addLegend().
-     *  @param dataset The dataset index.
-     *  @return The legend label, or null if there is none.
+    /**
+     * Control whether the grid is drawn.
+     *
+     * @param grid If true, a grid is drawn.
+     */
+    public synchronized void setGrid(boolean grid) {
+        // Changing legend means we need to repaint the offscreen buffer.
+        _plotImage = null;
+
+        _grid = grid;
+    }
+
+    /**
+     * Get the legend for a dataset, or null if there is none.
+     * The legend would have been set by addLegend().
+     *
+     * @param dataset The dataset index.
+     * @return The legend label, or null if there is none.
      */
     public synchronized String getLegend(int dataset) {
         int idx = _legendDatasets.indexOf(new Integer(dataset), 0);
@@ -672,12 +1135,14 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    /** Given a legend string, return the corresponding dataset or -1 if no
-     *  legend was added with that legend string
-     *  The legend would have been set by addLegend().
-     *  @param legend The String naming the legend
-     *  @return The legend dataset, or -1 if not found.
-     *  @since Ptplot 5.2p1
+    /**
+     * Given a legend string, return the corresponding dataset or -1 if no
+     * legend was added with that legend string
+     * The legend would have been set by addLegend().
+     *
+     * @param legend The String naming the legend
+     * @return The legend dataset, or -1 if not found.
+     * @since Ptplot 5.2p1
      */
     public synchronized int getLegendDataset(String legend) {
         int index = _legendStrings.indexOf(legend);
@@ -689,62 +1154,52 @@ public class PlotBox extends JPanel implements Printable {
         return ((Integer) _legendDatasets.get(index)).intValue();
     }
 
-    /** If the size of the plot has been set by setSize(),
-     *  then return that size.  Otherwise, return what the superclass
-     *  returns (which is undocumented, but apparently imposes no maximum size).
-     *  Currently (JDK 1.3), only BoxLayout pays any attention to this.
-     *  @return The maximum desired size.
-     */
-
-    //     public synchronized Dimension getMaximumSize() {
-    //         if (_sizeHasBeenSet) {
-    //             return new Dimension(_preferredWidth, _preferredHeight);
-    //         } else {
-    //             return super.getMaximumSize();
-    //         }
-    //     }
-
-    /** Get the minimum size of this component.
-     *  This is simply the dimensions specified by setSize(),
-     *  if this has been called.  Otherwise, return whatever the base
-     *  class returns, which is undocumented.
-     *  @return The minimum size.
-     */
-
-    //     public synchronized Dimension getMinimumSize() {
-    //         if (_sizeHasBeenSet) {
-    //             return new Dimension(_preferredWidth, _preferredHeight);
-    //         } else {
-    //             return super.getMinimumSize();
-    //         }
-    //     }
-
-    /** Get the current plot rectangle.
-     *  Note that Rectangle returned by this method is calculated
-     *  from the values of {@link #_ulx}, {@link #_uly},
-     *  {@link #_lrx} and {@link #_lry}.  The value passed in by
-     *  setPlotRectangle() is not directly used, thus calling
-     *  getPlotRectangle() may not return the same rectangle that
-     *  was passed in with setPlotRectangle().
-     *  @return Rectangle
-     *  @see #setPlotRectangle(Rectangle)
+    /**
+     * Get the current plot rectangle.
+     * Note that Rectangle returned by this method is calculated
+     * from the values of {@link #_ulx}, {@link #_uly},
+     * {@link #_lrx} and {@link #_lry}.  The value passed in by
+     * setPlotRectangle() is not directly used, thus calling
+     * getPlotRectangle() may not return the same rectangle that
+     * was passed in with setPlotRectangle().
+     *
+     * @return Rectangle
+     * @see #setPlotRectangle(Rectangle)
      */
     public Rectangle getPlotRectangle() {
         return new Rectangle(_ulx, _uly, _lrx - _ulx, _lry - _uly);
     }
 
-    /** Get the preferred size of this component.
-     *  This is simply the dimensions specified by setSize(),
-     *  if this has been called, or the default width and height
-     *  otherwise (500 by 300).
-     *  @return The preferred size.
+    /**
+     * Set the plot rectangle inside the axes.  This method
+     * can be used to create two plots that share the same axes.
+     *
+     * @param rectangle Rectangle space inside axes.
+     * @see #getPlotRectangle()
+     */
+    public synchronized void setPlotRectangle(Rectangle rectangle) {
+        // Changing legend means we need to repaint the offscreen buffer.
+        _plotImage = null;
+
+        _specifiedPlotRectangle = rectangle;
+    }
+
+    /**
+     * Get the preferred size of this component.
+     * This is simply the dimensions specified by setSize(),
+     * if this has been called, or the default width and height
+     * otherwise (500 by 300).
+     *
+     * @return The preferred size.
      */
     public synchronized Dimension getPreferredSize() {
         return new Dimension(_preferredWidth, _preferredHeight);
     }
 
-    /** Get the title of the graph, or an empty string if there is none.
-     *  @return The title.
+    /**
+     * Get the title of the graph, or an empty string if there is none.
+     *
+     * @return The title.
      */
     public synchronized String getTitle() {
         if (_title == null) {
@@ -754,12 +1209,26 @@ public class PlotBox extends JPanel implements Printable {
         return _title;
     }
 
-    /** Get the range for X values of the data points registered so far.
-     *  Usually, derived classes handle managing the range by checking
-     *  each new point against the current range.
-     *  @return An array of two doubles where the first element is the
-     *  minimum and the second element is the maximum.
-     *  @see #getXRange()
+    /**
+     * Set the title of the graph.
+     *
+     * @param title The title.
+     */
+    public synchronized void setTitle(String title) {
+        // Changing legend means we need to repaint the offscreen buffer.
+        _plotImage = null;
+
+        _title = title;
+    }
+
+    /**
+     * Get the range for X values of the data points registered so far.
+     * Usually, derived classes handle managing the range by checking
+     * each new point against the current range.
+     *
+     * @return An array of two doubles where the first element is the
+     * minimum and the second element is the maximum.
+     * @see #getXRange()
      */
     public synchronized double[] getXAutoRange() {
         double[] result = new double[2];
@@ -768,30 +1237,70 @@ public class PlotBox extends JPanel implements Printable {
         return result;
     }
 
-    /** Get the label for the X (horizontal) axis, or null if none has
-     *  been set.
-     *  @return The X label.
+    /** @serial Indicator that size has been set. */
+
+    //protected boolean _sizeHasBeenSet = false;
+
+    /**
+     * Get the label for the X (horizontal) axis, or null if none has
+     * been set.
+     *
+     * @return The X label.
      */
     public synchronized String getXLabel() {
         return _xlabel;
     }
 
-    /** Return whether the X axis is drawn with a logarithmic scale.
-     *  @return True if the X axis is logarithmic.
+    ///////////////////////////////////////////////////////////////////
+    ////                         private methods                   ////
+
+    /**
+     * Set the label for the X (horizontal) axis.
+     *
+     * @param label The label.
+     */
+    public synchronized void setXLabel(String label) {
+        // Changing legend means we need to repaint the offscreen buffer.
+        _plotImage = null;
+
+        _xlabel = label;
+    }
+
+    /**
+     * Return whether the X axis is drawn with a logarithmic scale.
+     *
+     * @return True if the X axis is logarithmic.
      */
     public boolean getXLog() {
         return _xlog;
     }
 
-    /** Get the X range. If {@link #setXRange(double, double)} has been
-     *  called, then this method returns the values passed in as
-     *  arguments to setXRange(double, double).  If setXRange(double,
-     *  double) has not been called, then this method returns the
-     *  range of the data to be plotted, which might not be all of the
-     *  data due to zooming.
-     *  @return An array of two doubles where the first element is the
-     *  minimum and the second element is the maximum.
-     *  @see #getXAutoRange()
+    /**
+     * Specify whether the X axis is drawn with a logarithmic scale.
+     * If you would like to have the X axis drawn with a
+     * logarithmic axis, then setXLog(true) should be called before
+     * adding any data points.
+     *
+     * @param xlog If true, logarithmic axis is used.
+     */
+    public synchronized void setXLog(boolean xlog) {
+        // Changing legend means we need to repaint the offscreen buffer.
+        _plotImage = null;
+
+        _xlog = xlog;
+    }
+
+    /**
+     * Get the X range. If {@link #setXRange(double, double)} has been
+     * called, then this method returns the values passed in as
+     * arguments to setXRange(double, double).  If setXRange(double,
+     * double) has not been called, then this method returns the
+     * range of the data to be plotted, which might not be all of the
+     * data due to zooming.
+     *
+     * @return An array of two doubles where the first element is the
+     * minimum and the second element is the maximum.
+     * @see #getXAutoRange()
      */
     public synchronized double[] getXRange() {
         double[] result = new double[2];
@@ -809,11 +1318,13 @@ public class PlotBox extends JPanel implements Printable {
         return result;
     }
 
-    /** Get the X ticks that have been specified, or null if none.
-     *  The return value is an array with two vectors, the first of
-     *  which specifies the X tick locations (as instances of Double),
-     *  and the second of which specifies the corresponding labels.
-     *  @return The X ticks.
+    /**
+     * Get the X ticks that have been specified, or null if none.
+     * The return value is an array with two vectors, the first of
+     * which specifies the X tick locations (as instances of Double),
+     * and the second of which specifies the corresponding labels.
+     *
+     * @return The X ticks.
      */
     public synchronized Vector[] getXTicks() {
         if (_xticks == null) {
@@ -826,12 +1337,14 @@ public class PlotBox extends JPanel implements Printable {
         return result;
     }
 
-    /** Get the range for Y values of the data points registered so far.
-     *  Usually, derived classes handle managing the range by checking
-     *  each new point against the range.
-     *  @return An array of two doubles where the first element is the
-     *  minimum and the second element is the maximum.
-     *  @see #getYRange()
+    /**
+     * Get the range for Y values of the data points registered so far.
+     * Usually, derived classes handle managing the range by checking
+     * each new point against the range.
+     *
+     * @return An array of two doubles where the first element is the
+     * minimum and the second element is the maximum.
+     * @see #getYRange()
      */
     public synchronized double[] getYAutoRange() {
         double[] result = new double[2];
@@ -840,30 +1353,63 @@ public class PlotBox extends JPanel implements Printable {
         return result;
     }
 
-    /** Get the label for the Y (vertical) axis, or null if none has
-     *  been set.
-     *  @return The Y label.
+    /**
+     * Get the label for the Y (vertical) axis, or null if none has
+     * been set.
+     *
+     * @return The Y label.
      */
     public String getYLabel() {
         return _ylabel;
     }
 
-    /** Return whether the Y axis is drawn with a logarithmic scale.
-     *  @return True if the Y axis is logarithmic.
+    /**
+     * Set the label for the Y (vertical) axis.
+     *
+     * @param label The label.
+     */
+    public synchronized void setYLabel(String label) {
+        // Changing legend means we need to repaint the offscreen buffer.
+        _plotImage = null;
+
+        _ylabel = label;
+    }
+
+    /**
+     * Return whether the Y axis is drawn with a logarithmic scale.
+     *
+     * @return True if the Y axis is logarithmic.
      */
     public boolean getYLog() {
         return _ylog;
     }
 
-    /** Get the Y range. If {@link #setYRange(double, double)} has been
-     *  called, then this method returns the values passed in as
-     *  arguments to setYRange(double, double).  If setYRange(double,
-     *  double) has not been called, then this method returns the
-     *  range of the data to be plotted, which might not be all of the
-     *  data due to zooming.
-     *  @return An array of two doubles where the first element is the
-     *  minimum and the second element is the maximum.
-     *  @see #getYAutoRange()
+    /**
+     * Specify whether the Y axis is drawn with a logarithmic scale.
+     * If you would like to have the Y axis drawn with a
+     * logarithmic axis, then setYLog(true) should be called before
+     * adding any data points.
+     *
+     * @param ylog If true, logarithmic axis is used.
+     */
+    public synchronized void setYLog(boolean ylog) {
+        // Changing legend means we need to repaint the offscreen buffer.
+        _plotImage = null;
+
+        _ylog = ylog;
+    }
+
+    /**
+     * Get the Y range. If {@link #setYRange(double, double)} has been
+     * called, then this method returns the values passed in as
+     * arguments to setYRange(double, double).  If setYRange(double,
+     * double) has not been called, then this method returns the
+     * range of the data to be plotted, which might not be all of the
+     * data due to zooming.
+     *
+     * @return An array of two doubles where the first element is the
+     * minimum and the second element is the maximum.
+     * @see #getYAutoRange()
      */
     public synchronized double[] getYRange() {
         double[] result = new double[2];
@@ -881,11 +1427,13 @@ public class PlotBox extends JPanel implements Printable {
         return result;
     }
 
-    /** Get the Y ticks that have been specified, or null if none.
-     *  The return value is an array with two vectors, the first of
-     *  which specifies the Y tick locations (as instances of Double),
-     *  and the second of which specifies the corresponding labels.
-     *  @return The Y ticks.
+    /**
+     * Get the Y ticks that have been specified, or null if none.
+     * The return value is an array with two vectors, the first of
+     * which specifies the Y tick locations (as instances of Double),
+     * and the second of which specifies the corresponding labels.
+     *
+     * @return The Y ticks.
      */
     public synchronized Vector[] getYTicks() {
         if (_yticks == null) {
@@ -898,10 +1446,12 @@ public class PlotBox extends JPanel implements Printable {
         return result;
     }
 
-    /** Initialize the component, creating the fill button and parsing
-     *  an input file, if one has been specified.  This is deprecated.
-     *  Call setButtons() and read() instead.
-     *  @deprecated
+    /**
+     * Initialize the component, creating the fill button and parsing
+     * an input file, if one has been specified.  This is deprecated.
+     * Call setButtons() and read() instead.
+     *
+     * @deprecated
      */
     public void init() {
         setButtons(true);
@@ -911,9 +1461,11 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    /** Paint the component contents, which in this base class is
-     *  only the axes.
-     *  @param graphics The graphics context.
+    /**
+     * Paint the component contents, which in this base class is
+     * only the axes.
+     *
+     * @param graphics The graphics context.
      */
     public synchronized void paintComponent(Graphics graphics) {
         //  super.paintComponent(graphics);
@@ -939,18 +1491,22 @@ public class PlotBox extends JPanel implements Printable {
         // requestFocus();
     }
 
-    /** Syntactic sugar for parseFile(filespec, documentBase).
-     *  This method is deprecated.  Use read() to read the old file
-     *  format, or use one of the classes in the plotml package to
-     *  read the XML-based file format.
-     *  @deprecated
+    /**
+     * Syntactic sugar for parseFile(filespec, documentBase).
+     * This method is deprecated.  Use read() to read the old file
+     * format, or use one of the classes in the plotml package to
+     * read the XML-based file format.
+     *
+     * @deprecated
      */
     public void parseFile(String filespec) {
         parseFile(filespec, (URL) null);
     }
 
-    /** Open up the input file, which could be stdin, a URL, or a file.
-     *  @deprecated This method is deprecated.  Use read() instead.
+    /**
+     * Open up the input file, which could be stdin, a URL, or a file.
+     *
+     * @deprecated This method is deprecated.  Use read() instead.
      */
     public synchronized void parseFile(String filespec, URL documentBase) {
         DataInputStream in = null;
@@ -1030,17 +1586,19 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    /** Print the plot to a printer, represented by the specified graphics
-     *  object.
-     *  @param graphics The context into which the page is drawn.
-     *  @param format The size and orientation of the page being drawn.
-     *  @param index The zero based index of the page to be drawn.
-     *  @return PAGE_EXISTS if the page is rendered successfully, or
-     *   NO_SUCH_PAGE if pageIndex specifies a non-existent page.
-     *  @exception PrinterException If the print job is terminated.
+    /**
+     * Print the plot to a printer, represented by the specified graphics
+     * object.
+     *
+     * @param graphics The context into which the page is drawn.
+     * @param format   The size and orientation of the page being drawn.
+     * @param index    The zero based index of the page to be drawn.
+     * @return PAGE_EXISTS if the page is rendered successfully, or
+     * NO_SUCH_PAGE if pageIndex specifies a non-existent page.
+     * @throws PrinterException If the print job is terminated.
      */
     public synchronized int print(Graphics graphics, PageFormat format,
-            int index) throws PrinterException {
+                                  int index) throws PrinterException {
         if (graphics == null) {
             return Printable.NO_SUCH_PAGE;
         }
@@ -1064,35 +1622,37 @@ public class PlotBox extends JPanel implements Printable {
         return Printable.PAGE_EXISTS;
     }
 
-    /** Read commands and/or plot data from an input stream in the old
-     *  (non-XML) file syntax.
-     *  To update the display, call repaint(), or make the plot visible with
-     *  setVisible(true).
-     *  <p>
-     *  To read from standard input, use:
-     *  <pre>
+    /**
+     * Read commands and/or plot data from an input stream in the old
+     * (non-XML) file syntax.
+     * To update the display, call repaint(), or make the plot visible with
+     * setVisible(true).
+     * <p>
+     * To read from standard input, use:
+     * <pre>
      *     read(System.in);
      *  </pre>
-     *  To read from a url, use:
-     *  <pre>
+     * To read from a url, use:
+     * <pre>
      *     read(url.openStream());
      *  </pre>
-     *  To read a URL from within an applet, use:
-     *  <pre>
+     * To read a URL from within an applet, use:
+     * <pre>
      *     URL url = new URL(getDocumentBase(), urlSpec);
      *     read(url.openStream());
      *  </pre>
-     *  Within an application, if you have an absolute URL, use:
-     *  <pre>
+     * Within an application, if you have an absolute URL, use:
+     * <pre>
      *     URL url = new URL(urlSpec);
      *     read(url.openStream());
      *  </pre>
-     *  To read from a file, use:
-     *  <pre>
+     * To read from a file, use:
+     * <pre>
      *     read(new FileInputStream(filename));
      *  </pre>
-     *  @param in The input stream.
-     *  @exception IOException If the stream cannot be read.
+     *
+     * @param in The input stream.
+     * @throws IOException If the stream cannot be read.
      */
     public synchronized void read(InputStream in) throws IOException {
         try {
@@ -1120,18 +1680,25 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    /** Read a single line command provided as a string.
-     *  The commands can be any of those in the ASCII file format.
-     *  @param command A command.
+    ///////////////////////////////////////////////////////////////////
+    ////                         private variables                 ////
+
+    /**
+     * Read a single line command provided as a string.
+     * The commands can be any of those in the ASCII file format.
+     *
+     * @param command A command.
      */
     public synchronized void read(String command) {
         _parseLine(command);
     }
 
-    /** Remove the legend (displayed at the upper right) for the specified
-     *  data set. If the dataset is not found, nothing will occur.
-     *  The PlotBox must be repainted in order for this to take effect.
-     *  @param dataset The dataset index.
+    /**
+     * Remove the legend (displayed at the upper right) for the specified
+     * data set. If the dataset is not found, nothing will occur.
+     * The PlotBox must be repainted in order for this to take effect.
+     *
+     * @param dataset The dataset index.
      */
     public synchronized void removeLegend(int dataset) {
         final int len = _legendDatasets.size();
@@ -1151,11 +1718,13 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    /** Rename a legend.
-     *  @param dataset The dataset of the legend to be renamed.
-     *  If there is no dataset with this value, then nothing happens.
-     *  @param newName  The new name of legend.
-     *  @see #addLegend(int, String)
+    /**
+     * Rename a legend.
+     *
+     * @param dataset The dataset of the legend to be renamed.
+     *                If there is no dataset with this value, then nothing happens.
+     * @param newName The new name of legend.
+     * @see #addLegend(int, String)
      */
     public synchronized void renameLegend(int dataset, String newName) {
         int index = _legendDatasets.indexOf(new Integer(dataset), 0);
@@ -1168,11 +1737,12 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    /** Reset the X and Y axes to the ranges that were first specified
-     *  using setXRange() and setYRange(). If these methods have not been
-     *  called, then reset to the default ranges.
-     *  This method calls repaint(), which eventually causes the display
-     *  to be updated.
+    /**
+     * Reset the X and Y axes to the ranges that were first specified
+     * using setXRange() and setYRange(). If these methods have not been
+     * called, then reset to the default ranges.
+     * This method calls repaint(), which eventually causes the display
+     * to be updated.
      */
     public synchronized void resetAxes() {
         setXRange(_originalXlow, _originalXhigh);
@@ -1180,15 +1750,18 @@ public class PlotBox extends JPanel implements Printable {
         repaint();
     }
 
-    /** Do nothing in this base class. Derived classes might want to override
-     *  this class to give an example of their use.
+    /**
+     * Do nothing in this base class. Derived classes might want to override
+     * this class to give an example of their use.
      */
     public void samplePlot() {
         // Empty default implementation.
     }
 
-    /** Set the background color.
-     *  @param background The background color.
+    /**
+     * Set the background color.
+     *
+     * @param background The background color.
      */
     public synchronized void setBackground(Color background) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -1198,14 +1771,16 @@ public class PlotBox extends JPanel implements Printable {
         super.setBackground(_background);
     }
 
-    /** Move and resize this component. The new location of the top-left
-     *  corner is specified by x and y, and the new size is specified by
-     *  width and height. This overrides the base class method to make
-     *  a record of the new size.
-     *  @param x The new x-coordinate of this component.
-     *  @param y The new y-coordinate of this component.
-     *  @param width The new width of this component.
-     *  @param height The new height of this component.
+    /**
+     * Move and resize this component. The new location of the top-left
+     * corner is specified by x and y, and the new size is specified by
+     * width and height. This overrides the base class method to make
+     * a record of the new size.
+     *
+     * @param x      The new x-coordinate of this component.
+     * @param y      The new y-coordinate of this component.
+     * @param width  The new width of this component.
+     * @param height The new height of this component.
      */
     public synchronized void setBounds(int x, int y, int width, int height) {
         _width = width;
@@ -1217,15 +1792,16 @@ public class PlotBox extends JPanel implements Printable {
         super.setBounds(x, y, _width, _height);
     }
 
-    /** If the argument is true, make a fill button visible at the upper
-     *  right.  This button auto-scales the plot.
-     *  NOTE: The button may infringe on the title space,
-     *  if the title is long.  In an application, it is preferable to provide
-     *  a menu with the fill command.  This way, when printing the plot,
-     *  the printed plot will not have a spurious button.  Thus, this method
-     *  should be used only by applets, which normally do not have menus.
-     *  This method should only be called from within the event dispatch
-     *  thread, since it interacts with swing.
+    /**
+     * If the argument is true, make a fill button visible at the upper
+     * right.  This button auto-scales the plot.
+     * NOTE: The button may infringe on the title space,
+     * if the title is long.  In an application, it is preferable to provide
+     * a menu with the fill command.  This way, when printing the plot,
+     * the printed plot will not have a spurious button.  Thus, this method
+     * should be used only by applets, which normally do not have menus.
+     * This method should only be called from within the event dispatch
+     * thread, since it interacts with swing.
      */
     public synchronized void setButtons(boolean visible) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -1349,48 +1925,10 @@ public class PlotBox extends JPanel implements Printable {
         // requestFocus();
     }
 
-    /** If the argument is false, draw the plot without using color
-     *  (in black and white).  Otherwise, draw it in color (the default).
-     *  @param useColor False to draw in back and white.
-     */
-    public synchronized void setColor(boolean useColor) {
-        // Changing legend means we need to repaint the offscreen buffer.
-        _plotImage = null;
-
-        _usecolor = useColor;
-    }
-
-    /** Set the point colors.  Note that the default colors have been
-     *  carefully selected to maximize readability and that it is easy
-     *  to use colors that result in a very ugly plot.
-     *  @param colors Array of colors to use in succession for data sets.
-     *  @see #getColors()
-     */
-    public synchronized void setColors(Color[] colors) {
-        // Changing legend means we need to repaint the offscreen buffer.
-        _plotImage = null;
-
-        _colors = colors;
-    }
-
-    /** Set the file to read when init() is called.
-     *  This method is deprecated.  Use read() instead.
-     *  @deprecated
-     */
-    public void setDataurl(String filespec) {
-        _filespec = filespec;
-    }
-
-    /** Set the document base to used when init() is called to read a URL.
-     *  This method is deprecated.  Use read() instead.
-     *  @deprecated
-     */
-    public void setDocumentBase(URL documentBase) {
-        _documentBase = documentBase;
-    }
-
-    /** Set the foreground color.
-     *  @param foreground The foreground color.
+    /**
+     * Set the foreground color.
+     *
+     * @param foreground The foreground color.
      */
     public synchronized void setForeground(Color foreground) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -1400,20 +1938,12 @@ public class PlotBox extends JPanel implements Printable {
         super.setForeground(_foreground);
     }
 
-    /** Control whether the grid is drawn.
-     *  @param grid If true, a grid is drawn.
-     */
-    public synchronized void setGrid(boolean grid) {
-        // Changing legend means we need to repaint the offscreen buffer.
-        _plotImage = null;
-
-        _grid = grid;
-    }
-
-    /** Set the label font, which is used for axis labels and legend labels.
-     *  The font names understood are those understood by
-     *  java.awt.Font.decode().
-     *  @param name A font name.
+    /**
+     * Set the label font, which is used for axis labels and legend labels.
+     * The font names understood are those understood by
+     * java.awt.Font.decode().
+     *
+     * @param name A font name.
      */
     public synchronized void setLabelFont(String name) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -1423,28 +1953,18 @@ public class PlotBox extends JPanel implements Printable {
         _labelFontMetrics = getFontMetrics(_labelFont);
     }
 
-    /** Set the plot rectangle inside the axes.  This method
-     *  can be used to create two plots that share the same axes.
-     *  @param rectangle Rectangle space inside axes.
-     *  @see #getPlotRectangle()
-     */
-    public synchronized void setPlotRectangle(Rectangle rectangle) {
-        // Changing legend means we need to repaint the offscreen buffer.
-        _plotImage = null;
-
-        _specifiedPlotRectangle = rectangle;
-    }
-
-    /** Set the size of the plot.  This overrides the base class to make
-     *  it work.  In particular, it records the specified size so that
-     *  getMinimumSize() and getPreferredSize() return the specified value.
-     *  However, it only works if the plot is placed in its own JPanel.
-     *  This is because the JPanel asks the contained component for
-     *  its preferred size before determining the size of the panel.
-     *  If the plot is placed directly in the content pane of a JApplet,
-     *  then, mysteriously, this method has no effect.
-     *  @param width The width, in pixels.
-     *  @param height The height, in pixels.
+    /**
+     * Set the size of the plot.  This overrides the base class to make
+     * it work.  In particular, it records the specified size so that
+     * getMinimumSize() and getPreferredSize() return the specified value.
+     * However, it only works if the plot is placed in its own JPanel.
+     * This is because the JPanel asks the contained component for
+     * its preferred size before determining the size of the panel.
+     * If the plot is placed directly in the content pane of a JApplet,
+     * then, mysteriously, this method has no effect.
+     *
+     * @param width  The width, in pixels.
+     * @param height The height, in pixels.
      */
     public synchronized void setSize(int width, int height) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -1459,20 +1979,12 @@ public class PlotBox extends JPanel implements Printable {
         super.setSize(width, height);
     }
 
-    /** Set the title of the graph.
-     *  @param title The title.
-     */
-    public synchronized void setTitle(String title) {
-        // Changing legend means we need to repaint the offscreen buffer.
-        _plotImage = null;
-
-        _title = title;
-    }
-
-    /** Set the title font.
-     *  The font names understood are those understood by
-     *  java.awt.Font.decode().
-     *  @param name A font name.
+    /**
+     * Set the title font.
+     * The font names understood are those understood by
+     * java.awt.Font.decode().
+     *
+     * @param name A font name.
      */
     public synchronized void setTitleFont(String name) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -1490,13 +2002,15 @@ public class PlotBox extends JPanel implements Printable {
         _superscriptFontMetrics = getFontMetrics(_superscriptFont);
     }
 
-    /** Specify whether the X axis is wrapped.
-     *  If it is, then X values that are out of range are remapped
-     *  to be in range using modulo arithmetic. The X range is determined
-     *  by the most recent call to setXRange() (or the most recent zoom).
-     *  If the X range has not been set, then use the default X range,
-     *  or if data has been plotted, then the current fill range.
-     *  @param wrap If true, wrapping of the X axis is enabled.
+    /**
+     * Specify whether the X axis is wrapped.
+     * If it is, then X values that are out of range are remapped
+     * to be in range using modulo arithmetic. The X range is determined
+     * by the most recent call to setXRange() (or the most recent zoom).
+     * If the X range has not been set, then use the default X range,
+     * or if data has been plotted, then the current fill range.
+     *
+     * @param wrap If true, wrapping of the X axis is enabled.
      */
     public synchronized void setWrap(boolean wrap) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -1517,35 +2031,14 @@ public class PlotBox extends JPanel implements Printable {
         _wrapHigh = _xhighgiven;
     }
 
-    /** Set the label for the X (horizontal) axis.
-     *  @param label The label.
-     */
-    public synchronized void setXLabel(String label) {
-        // Changing legend means we need to repaint the offscreen buffer.
-        _plotImage = null;
-
-        _xlabel = label;
-    }
-
-    /** Specify whether the X axis is drawn with a logarithmic scale.
-     *  If you would like to have the X axis drawn with a
-     *  logarithmic axis, then setXLog(true) should be called before
-     *  adding any data points.
-     *  @param xlog If true, logarithmic axis is used.
-     */
-    public synchronized void setXLog(boolean xlog) {
-        // Changing legend means we need to repaint the offscreen buffer.
-        _plotImage = null;
-
-        _xlog = xlog;
-    }
-
-    /** Set the X (horizontal) range of the plot.  If this is not done
-     *  explicitly, then the range is computed automatically from data
-     *  available when the plot is drawn.  If min and max
-     *  are identical, then the range is arbitrarily spread by 1.
-     *  @param min The left extent of the range.
-     *  @param max The right extent of the range.
+    /**
+     * Set the X (horizontal) range of the plot.  If this is not done
+     * explicitly, then the range is computed automatically from data
+     * available when the plot is drawn.  If min and max
+     * are identical, then the range is arbitrarily spread by 1.
+     *
+     * @param min The left extent of the range.
+     * @param max The right extent of the range.
      */
     public synchronized void setXRange(double min, double max) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -1557,35 +2050,14 @@ public class PlotBox extends JPanel implements Printable {
         _setXRange(min, max);
     }
 
-    /** Set the label for the Y (vertical) axis.
-     *  @param label The label.
-     */
-    public synchronized void setYLabel(String label) {
-        // Changing legend means we need to repaint the offscreen buffer.
-        _plotImage = null;
-
-        _ylabel = label;
-    }
-
-    /** Specify whether the Y axis is drawn with a logarithmic scale.
-     *  If you would like to have the Y axis drawn with a
-     *  logarithmic axis, then setYLog(true) should be called before
-     *  adding any data points.
-     *  @param ylog If true, logarithmic axis is used.
-     */
-    public synchronized void setYLog(boolean ylog) {
-        // Changing legend means we need to repaint the offscreen buffer.
-        _plotImage = null;
-
-        _ylog = ylog;
-    }
-
-    /** Set the Y (vertical) range of the plot.  If this is not done
-     *  explicitly, then the range is computed automatically from data
-     *  available when the plot is drawn.  If min and max are identical,
-     *  then the range is arbitrarily spread by 0.1.
-     *  @param min The bottom extent of the range.
-     *  @param max The top extent of the range.
+    /**
+     * Set the Y (vertical) range of the plot.  If this is not done
+     * explicitly, then the range is computed automatically from data
+     * available when the plot is drawn.  If min and max are identical,
+     * then the range is arbitrarily spread by 0.1.
+     *
+     * @param min The bottom extent of the range.
+     * @param max The top extent of the range.
      */
     public synchronized void setYRange(double min, double max) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -1597,50 +2069,56 @@ public class PlotBox extends JPanel implements Printable {
         _setYRange(min, max);
     }
 
-    /** Write the current data and plot configuration to the
-     *  specified stream in PlotML syntax.  PlotML is an XML
-     *  extension for plot data.  The written information is
-     *  standalone, in that it includes the DTD (document type
-     *  definition).  This makes is somewhat verbose.  To get
-     *  smaller files, use the two argument version of write().
-     *  The output is buffered, and is flushed and
-     *  closed before exiting.  Derived classes should override
-     *  writeFormat and writeData rather than this method.
-     *  @param out An output stream.
+    /**
+     * Write the current data and plot configuration to the
+     * specified stream in PlotML syntax.  PlotML is an XML
+     * extension for plot data.  The written information is
+     * standalone, in that it includes the DTD (document type
+     * definition).  This makes is somewhat verbose.  To get
+     * smaller files, use the two argument version of write().
+     * The output is buffered, and is flushed and
+     * closed before exiting.  Derived classes should override
+     * writeFormat and writeData rather than this method.
+     *
+     * @param out An output stream.
      */
     public void write(OutputStream out) {
         write(out, null);
     }
 
-    /** Write the current data and plot configuration to the
-     *  specified stream in PlotML syntax.  PlotML is an XML
-     *  scheme for plot data. The URL (relative or absolute) for the DTD is
-     *  given as the second argument.  If that argument is null,
-     *  then the PlotML PUBLIC DTD is referenced, resulting in a file
-     *  that can be read by a PlotML parser without any external file
-     *  references, as long as that parser has local access to the DTD.
-     *  The output is buffered, and is flushed and
-     *  closed before exiting.  Derived classes should override
-     *  writeFormat and writeData rather than this method.
-     *  @param out An output stream.
-     *  @param dtd The reference (URL) for the DTD, or null to use the
-     *   PUBLIC DTD.
+    /**
+     * Write the current data and plot configuration to the
+     * specified stream in PlotML syntax.  PlotML is an XML
+     * scheme for plot data. The URL (relative or absolute) for the DTD is
+     * given as the second argument.  If that argument is null,
+     * then the PlotML PUBLIC DTD is referenced, resulting in a file
+     * that can be read by a PlotML parser without any external file
+     * references, as long as that parser has local access to the DTD.
+     * The output is buffered, and is flushed and
+     * closed before exiting.  Derived classes should override
+     * writeFormat and writeData rather than this method.
+     *
+     * @param out An output stream.
+     * @param dtd The reference (URL) for the DTD, or null to use the
+     *            PUBLIC DTD.
      */
     public synchronized void write(OutputStream out, String dtd) {
         write(new OutputStreamWriter(out), dtd);
     }
 
-    /** Write the current data and plot configuration to the
-     *  specified stream in PlotML syntax.  PlotML is an XML
-     *  scheme for plot data. The URL (relative or absolute) for the DTD is
-     *  given as the second argument.  If that argument is null,
-     *  then the PlotML PUBLIC DTD is referenced, resulting in a file
-     *  that can be read by a PlotML parser without any external file
-     *  references, as long as that parser has local access to the DTD.
-     *  The output is buffered, and is flushed before exiting.
-     *  @param out An output writer.
-     *  @param dtd The reference (URL) for the DTD, or null to use the
-     *   PUBLIC DTD.
+    /**
+     * Write the current data and plot configuration to the
+     * specified stream in PlotML syntax.  PlotML is an XML
+     * scheme for plot data. The URL (relative or absolute) for the DTD is
+     * given as the second argument.  If that argument is null,
+     * then the PlotML PUBLIC DTD is referenced, resulting in a file
+     * that can be read by a PlotML parser without any external file
+     * references, as long as that parser has local access to the DTD.
+     * The output is buffered, and is flushed before exiting.
+     *
+     * @param out An output writer.
+     * @param dtd The reference (URL) for the DTD, or null to use the
+     *            PUBLIC DTD.
      */
     public synchronized void write(Writer out, String dtd) {
         // Auto-flush is disabled.
@@ -1672,19 +2150,23 @@ public class PlotBox extends JPanel implements Printable {
         // }
     }
 
-    /** Write plot data information to the specified output stream in PlotML.
-     *  In this base class, there is no data to write, so this method
-     *  returns without doing anything.
-     *  @param output A buffered print writer.
+    /**
+     * Write plot data information to the specified output stream in PlotML.
+     * In this base class, there is no data to write, so this method
+     * returns without doing anything.
+     *
+     * @param output A buffered print writer.
      */
     public synchronized void writeData(PrintWriter output) {
     }
 
-    /** Write plot format information to the specified output stream in PlotML.
-     *  Derived classes should override this method to first call
-     *  the parent class method, then add whatever additional format
-     *  information they wish to add to the stream.
-     *  @param output A buffered print writer.
+    /**
+     * Write plot format information to the specified output stream in PlotML.
+     * Derived classes should override this method to first call
+     * the parent class method, then add whatever additional format
+     * information they wish to add to the stream.
+     *
+     * @param output A buffered print writer.
      */
     public synchronized void writeFormat(PrintWriter output) {
         // NOTE: If you modify this, you should change the _DTD variable
@@ -1760,13 +2242,15 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    /** Write the current data and plot configuration to the
-     *  specified stream in the old PtPlot syntax.
-     *  The output is buffered, and is flushed and
-     *  closed before exiting.  Derived classes should override
-     *  _writeOldSyntax() rather than this method.
-     *  @param out An output stream.
-     *  @deprecated
+    /**
+     * Write the current data and plot configuration to the
+     * specified stream in the old PtPlot syntax.
+     * The output is buffered, and is flushed and
+     * closed before exiting.  Derived classes should override
+     * _writeOldSyntax() rather than this method.
+     *
+     * @param out An output stream.
+     * @deprecated
      */
     public synchronized void writeOldSyntax(OutputStream out) {
         // Auto-flush is disabled.
@@ -1781,62 +2265,61 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    /** Zoom in or out to the specified rectangle.
-     *  This method calls repaint().
-     *  @param lowx The low end of the new X range.
-     *  @param lowy The low end of the new Y range.
-     *  @param highx The high end of the new X range.
-     *  @param highy The high end of the new Y range.
+    /**
+     * Zoom in or out to the specified rectangle.
+     * This method calls repaint().
+     *
+     * @param lowx  The low end of the new X range.
+     * @param lowy  The low end of the new Y range.
+     * @param highx The high end of the new X range.
+     * @param highy The high end of the new Y range.
      */
     public synchronized void zoom(double lowx, double lowy, double highx,
-            double highy) {
+                                  double highy) {
         setXRange(lowx, highx);
         setYRange(lowy, highy);
         repaint();
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         public variables                  ////
-    public static final String PTPLOT_RELEASE = "5.5";
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected methods                 ////
-
-    /** Draw the axes using the current range, label, and title information.
-     *  If the second argument is true, clear the display before redrawing.
-     *  This method is called by paintComponent().  To cause it to be called
-     *  you would normally call repaint(), which eventually causes
-     *  paintComponent() to be called.
-     *  <p>
-     *  Note that this is synchronized so that points are not added
-     *  by other threads while the drawing is occurring.  This method
-     *  should be called only from the event dispatch thread, consistent
-     *  with swing policy.
-     *  @param graphics The graphics context.
-     *  @param clearfirst If true, clear the plot before proceeding.
+    /**
+     * Draw the axes using the current range, label, and title information.
+     * If the second argument is true, clear the display before redrawing.
+     * This method is called by paintComponent().  To cause it to be called
+     * you would normally call repaint(), which eventually causes
+     * paintComponent() to be called.
+     * <p>
+     * Note that this is synchronized so that points are not added
+     * by other threads while the drawing is occurring.  This method
+     * should be called only from the event dispatch thread, consistent
+     * with swing policy.
+     *
+     * @param graphics   The graphics context.
+     * @param clearfirst If true, clear the plot before proceeding.
      */
     protected synchronized void _drawPlot(Graphics graphics, boolean clearfirst) {
         Rectangle bounds = getBounds();
         _drawPlot(graphics, clearfirst, bounds);
     }
 
-    /** Draw the axes using the current range, label, and title information,
-     *  at the size of the specified rectangle.
-     *  If the second argument is true, clear the display before redrawing.
-     *  This method is called by paintComponent().  To cause it to be called
-     *  you would normally call repaint(), which eventually causes
-     *  paintComponent() to be called.
-     *  <p>
-     *  Note that this is synchronized so that points are not added
-     *  by other threads while the drawing is occurring.  This method
-     *  should be called only from the event dispatch thread, consistent
-     *  with swing policy.
-     *  @param graphics The graphics context.
-     *  @param clearfirst If true, clear the plot before proceeding.
-     *  @param drawRect A specification of the size.
+    /**
+     * Draw the axes using the current range, label, and title information,
+     * at the size of the specified rectangle.
+     * If the second argument is true, clear the display before redrawing.
+     * This method is called by paintComponent().  To cause it to be called
+     * you would normally call repaint(), which eventually causes
+     * paintComponent() to be called.
+     * <p>
+     * Note that this is synchronized so that points are not added
+     * by other threads while the drawing is occurring.  This method
+     * should be called only from the event dispatch thread, consistent
+     * with swing policy.
+     *
+     * @param graphics   The graphics context.
+     * @param clearfirst If true, clear the plot before proceeding.
+     * @param drawRect   A specification of the size.
      */
     protected synchronized void _drawPlot(Graphics graphics,
-            boolean clearfirst, Rectangle drawRect) {
+                                          boolean clearfirst, Rectangle drawRect) {
         // Ignore if there is no graphics object to draw on.
         if (graphics == null) {
             return;
@@ -1896,7 +2379,7 @@ public class PlotBox extends JPanel implements Printable {
 
         if (_specifiedPlotRectangle != null) {
             workingPlotRectangle = new Rectangle(Math.max(0,
-                                                         _specifiedPlotRectangle.x),
+                    _specifiedPlotRectangle.x),
                     Math.max(0, _specifiedPlotRectangle.y),
                     Math.min(drawRect.width, _specifiedPlotRectangle.width),
                     Math.min(drawRect.height, _specifiedPlotRectangle.height));
@@ -2089,7 +2572,7 @@ public class PlotBox extends JPanel implements Printable {
         } else {
             if (_ylabel != null) {
                 _ulx = widesty + _labelFontMetrics.stringWidth("W")
-                    + _leftPadding;
+                        + _leftPadding;
             } else {
                 _ulx = widesty + _leftPadding;
             }
@@ -2152,9 +2635,9 @@ public class PlotBox extends JPanel implements Printable {
                 // colliding with x labels.
                 int offset = 0;
 
-		// Steven Phillips added "=" in the following to avoid shift-up
+                // Steven Phillips added "=" in the following to avoid shift-up
                 if ((ind >= 0) && !_ylog) {
-		    // and the "-2" to this line, as alignment looks wrong
+                    // and the "-2" to this line, as alignment looks wrong
                     offset = halflabelheight - 2;
                 }
 
@@ -2189,11 +2672,11 @@ public class PlotBox extends JPanel implements Printable {
                     double tmpStep = (yStep > 1.0) ? 1.0 : yStep;
 
                     for (double ypos = _gridStep(unlabeledgrid, yStart,
-                                 tmpStep, _ylog); ypos <= _ytickMax;
+                            tmpStep, _ylog); ypos <= _ytickMax;
                          ypos = _gridStep(unlabeledgrid, ypos,
                                  tmpStep, _ylog)) {
                         int yCoord1 = _lry
-                            - (int) ((ypos - _ytickMin) * _ytickscale);
+                                - (int) ((ypos - _ytickMin) * _ytickscale);
 
                         if (_grid && (yCoord1 != _uly) && (yCoord1 != _lry)) {
                             graphics.setColor(Color.lightGray);
@@ -2356,7 +2839,7 @@ public class PlotBox extends JPanel implements Printable {
                 }
 
                 int labxpos = xCoord1
-                    - (_labelFontMetrics.stringWidth(xticklabel) / 2);
+                        - (_labelFontMetrics.stringWidth(xticklabel) / 2);
 
                 // NOTE: 3 pixel spacing between axis and labels.
                 graphics.drawString(xticklabel, labxpos, _lry + 3 + labelheight);
@@ -2377,11 +2860,11 @@ public class PlotBox extends JPanel implements Printable {
 
                 if (unlabeledgrid.size() > 0) {
                     for (double xpos = _gridStep(unlabeledgrid, xTmpStart,
-                                 tmpStep, _xlog); xpos <= _xtickMax;
+                            tmpStep, _xlog); xpos <= _xtickMax;
                          xpos = _gridStep(unlabeledgrid, xpos,
                                  tmpStep, _xlog)) {
                         xCoord1 = _ulx
-                            + (int) ((xpos - _xtickMin) * _xtickscale);
+                                + (int) ((xpos - _xtickMin) * _xtickscale);
 
                         if (_grid && (xCoord1 != _ulx) && (xCoord1 != _lrx)) {
                             graphics.setColor(Color.lightGray);
@@ -2426,13 +2909,13 @@ public class PlotBox extends JPanel implements Printable {
 
                 // Find  the start position of x label.
                 int labxpos = xCoord1
-                    - (_labelFontMetrics.stringWidth(label) / 2);
+                        - (_labelFontMetrics.stringWidth(label) / 2);
 
                 // If the labels are not overlapped, proceed.
                 if (labxpos > preLength) {
                     // calculate the length of the label
                     preLength = xCoord1
-                        + (_labelFontMetrics.stringWidth(label) / 2) + 10;
+                            + (_labelFontMetrics.stringWidth(label) / 2) + 10;
 
                     // Draw the label.
                     // NOTE: 3 pixel spacing between axis and labels.
@@ -2461,7 +2944,7 @@ public class PlotBox extends JPanel implements Printable {
             graphics.setFont(_titleFont);
 
             int titlex = _ulx
-                + ((width - _titleFontMetrics.stringWidth(_title)) / 2);
+                    + ((width - _titleFontMetrics.stringWidth(_title)) / 2);
             graphics.drawString(_title, titlex, titley);
         }
 
@@ -2469,7 +2952,7 @@ public class PlotBox extends JPanel implements Printable {
 
         if (_xlabel != null) {
             int labelx = _ulx
-                + ((width - _labelFontMetrics.stringWidth(_xlabel)) / 2);
+                    + ((width - _labelFontMetrics.stringWidth(_xlabel)) / 2);
             graphics.drawString(_xlabel, labelx, ySPos);
         }
 
@@ -2492,7 +2975,7 @@ public class PlotBox extends JPanel implements Printable {
                 // Not graphics 2D, no support for rotation.
                 // Vertical label is fairly complex to draw.
                 int starty = (_uly + ((_lry - _uly) / 2))
-                    - (yl * halflabelheight) + labelheight;
+                        - (yl * halflabelheight) + labelheight;
 
                 for (int i = 0; i < yl; i++) {
                     String nchar = _ylabel.substring(i, i + 1);
@@ -2506,35 +2989,36 @@ public class PlotBox extends JPanel implements Printable {
         graphics.setFont(previousFont);
     }
 
-    /** Put a mark corresponding to the specified dataset at the
-     *  specified x and y position.   The mark is drawn in the
-     *  current color.  In this base class, a point is a
-     *  filled rectangle 6 pixels across.  Note that marks greater than
-     *  about 6 pixels in size will not look very good since they will
-     *  overlap axis labels and may not fit well in the legend.   The
-     *  <i>clip</i> argument, if <code>true</code>, states
-     *  that the point should not be drawn if
-     *  it is out of range.
+    /**
+     * Put a mark corresponding to the specified dataset at the
+     * specified x and y position.   The mark is drawn in the
+     * current color.  In this base class, a point is a
+     * filled rectangle 6 pixels across.  Note that marks greater than
+     * about 6 pixels in size will not look very good since they will
+     * overlap axis labels and may not fit well in the legend.   The
+     * <i>clip</i> argument, if <code>true</code>, states
+     * that the point should not be drawn if
+     * it is out of range.
+     * <p>
+     * Note that this method is not synchronized, so the caller should be.
+     * Moreover this method should always be called from the event thread
+     * when being used to write to the screen.
      *
-     *  Note that this method is not synchronized, so the caller should be.
-     *  Moreover this method should always be called from the event thread
-     *  when being used to write to the screen.
-     *
-     *  @param graphics The graphics context.
-     *  @param dataset The index of the data set.
-     *  @param xpos The X position.
-     *  @param ypos The Y position.
-     *  @param clip If true, do not draw if out of range.
+     * @param graphics The graphics context.
+     * @param dataset  The index of the data set.
+     * @param xpos     The X position.
+     * @param ypos     The Y position.
+     * @param clip     If true, do not draw if out of range.
      */
     protected void _drawPoint(Graphics graphics, int dataset, long xpos,
-            long ypos, boolean clip) {
+                              long ypos, boolean clip) {
         // Ignore if there is no graphics object to draw on.
         if (graphics == null) {
             return;
         }
 
         boolean pointinside = (ypos <= _lry) && (ypos >= _uly)
-            && (xpos <= _lrx) && (xpos >= _ulx);
+                && (xpos <= _lrx) && (xpos >= _ulx);
 
         if (!pointinside && clip) {
             return;
@@ -2543,29 +3027,32 @@ public class PlotBox extends JPanel implements Printable {
         graphics.fillRect((int) xpos - 6, (int) ypos - 6, 6, 6);
     }
 
-    /** Display basic information in its own window.
+    /**
+     * Display basic information in its own window.
      */
     protected void _help() {
         String message = "Ptolemy plot package\n" + "By: Edward A. Lee\n"
-            + "and Christopher Hylands\n" + "Version " + PTPLOT_RELEASE
-            + ", Build: $Id: PlotBox.java,v 1.269.2.1 2005/07/28 17:19:36 cxh Exp $\n\n"
-            + "Key bindings:\n"
-            + "   Cntrl-c:  copy plot to clipboard (EPS format), if permitted\n"
-            + "   D: dump plot data to standard out\n"
-            + "   E: export plot to standard out (EPS format)\n"
-            + "   F: fill plot\n"
-            + "   H or ?: print help message (this message)\n"
-            + "   Cntrl-D or Q: quit\n" + "For more information, see\n"
-            + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n";
+                + "and Christopher Hylands\n" + "Version " + PTPLOT_RELEASE
+                + ", Build: $Id: PlotBox.java,v 1.269.2.1 2005/07/28 17:19:36 cxh Exp $\n\n"
+                + "Key bindings:\n"
+                + "   Cntrl-c:  copy plot to clipboard (EPS format), if permitted\n"
+                + "   D: dump plot data to standard out\n"
+                + "   E: export plot to standard out (EPS format)\n"
+                + "   F: fill plot\n"
+                + "   H or ?: print help message (this message)\n"
+                + "   Cntrl-D or Q: quit\n" + "For more information, see\n"
+                + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n";
         JOptionPane.showMessageDialog(this, message,
                 "Ptolemy Plot Help Window", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** Parse a line that gives plotting information.  In this base
-     *  class, only lines pertaining to the title and labels are processed.
-     *  Everything else is ignored. Return true if the line is recognized.
-     *  It is not synchronized, so its caller should be.
-     *  @param line A line of text.
+    /**
+     * Parse a line that gives plotting information.  In this base
+     * class, only lines pertaining to the title and labels are processed.
+     * Everything else is ignored. Return true if the line is recognized.
+     * It is not synchronized, so its caller should be.
+     *
+     * @param line A line of text.
      */
     protected boolean _parseLine(String line) {
         // If you modify this method, you should also modify write()
@@ -2678,9 +3165,11 @@ public class PlotBox extends JPanel implements Printable {
         return false;
     }
 
-    /** Set the visibility of the Fill button.
-     *  This is deprecated.  Use setButtons().
-     *  @deprecated
+    /**
+     * Set the visibility of the Fill button.
+     * This is deprecated.  Use setButtons().
+     *
+     * @deprecated
      */
     protected void _setButtonsVisibility(boolean vis) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -2692,12 +3181,14 @@ public class PlotBox extends JPanel implements Printable {
         _resetButton.setVisible(vis);
     }
 
-    /** Set the padding multiple.
-     *  The plot rectangle can be "padded" in each direction -x, +x, -y, and
-     *  +y.  If the padding is set to 0.05 (and the padding is used), then
-     *  there is 10% more length on each axis than set by the setXRange() and
-     *  setYRange() methods, 5% in each direction.
-     *  @param padding The padding multiple.
+    /**
+     * Set the padding multiple.
+     * The plot rectangle can be "padded" in each direction -x, +x, -y, and
+     * +y.  If the padding is set to 0.05 (and the padding is used), then
+     * there is 10% more length on each axis than set by the setXRange() and
+     * setYRange() methods, 5% in each direction.
+     *
+     * @param padding The padding multiple.
      */
     protected void _setPadding(double padding) {
         // Changing legend means we need to repaint the offscreen buffer.
@@ -2706,14 +3197,16 @@ public class PlotBox extends JPanel implements Printable {
         _padding = padding;
     }
 
-    /** Write plot information to the specified output stream in the
-     *  old PtPlot syntax.
-     *  Derived classes should override this method to first call
-     *  the parent class method, then add whatever additional information
-     *  they wish to add to the stream.
-     *  It is not synchronized, so its caller should be.
-     *  @param output A buffered print writer.
-     *  @deprecated
+    /**
+     * Write plot information to the specified output stream in the
+     * old PtPlot syntax.
+     * Derived classes should override this method to first call
+     * the parent class method, then add whatever additional information
+     * they wish to add to the stream.
+     * It is not synchronized, so its caller should be.
+     *
+     * @param output A buffered print writer.
+     * @deprecated
      */
     protected void _writeOldSyntax(PrintWriter output) {
         output.println("# Ptolemy plot, version 2.0");
@@ -2786,207 +3279,6 @@ public class PlotBox extends JPanel implements Printable {
             output.println("Color: off");
         }
     }
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected variables               ////
-    // The range of the data to be plotted.
-    protected transient double _yMax = 0;
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected variables               ////
-    // The range of the data to be plotted.
-    protected transient double _yMin = 0;
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected variables               ////
-    // The range of the data to be plotted.
-    protected transient double _xMax = 0;
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected variables               ////
-    // The range of the data to be plotted.
-    protected transient double _xMin = 0;
-
-    /** The factor we pad by so that we don't plot points on the axes.
-     */
-    protected double _padding = 0.05;
-
-    // Whether the ranges have been given.
-    protected transient boolean _xRangeGiven = false;
-    protected transient boolean _yRangeGiven = false;
-    protected transient boolean _rangesGivenByZooming = false;
-
-    /** @serial The given X and Y ranges.
-     * If they have been given the top and bottom of the x and y ranges.
-     * This is different from _xMin and _xMax, which actually represent
-     * the range of data that is plotted.  This represents the range
-     * specified (which may be different due to zooming).
-     */
-    protected double _xlowgiven;
-
-    /** @serial The given X and Y ranges.
-     * If they have been given the top and bottom of the x and y ranges.
-     * This is different from _xMin and _xMax, which actually represent
-     * the range of data that is plotted.  This represents the range
-     * specified (which may be different due to zooming).
-     */
-    protected double _xhighgiven;
-
-    /** @serial The given X and Y ranges.
-     * If they have been given the top and bottom of the x and y ranges.
-     * This is different from _xMin and _xMax, which actually represent
-     * the range of data that is plotted.  This represents the range
-     * specified (which may be different due to zooming).
-     */
-    protected double _ylowgiven;
-
-    /** @serial The given X and Y ranges.
-     * If they have been given the top and bottom of the x and y ranges.
-     * This is different from _xMin and _xMax, which actually represent
-     * the range of data that is plotted.  This represents the range
-     * specified (which may be different due to zooming).
-     */
-    protected double _yhighgiven;
-
-    /** @serial The minimum X value registered so for, for auto ranging. */
-    protected double _xBottom = Double.MAX_VALUE;
-
-    /** @serial The maximum X value registered so for, for auto ranging. */
-    protected double _xTop = -Double.MAX_VALUE;
-
-    /** @serial The minimum Y value registered so for, for auto ranging. */
-    protected double _yBottom = Double.MAX_VALUE;
-
-    /** @serial The maximum Y value registered so for, for auto ranging. */
-    protected double _yTop = -Double.MAX_VALUE;
-
-    /** @serial Whether to draw the axes using a logarithmic scale. */
-    protected boolean _xlog = false;
-
-    /** @serial Whether to draw the axes using a logarithmic scale. */
-    protected boolean _ylog = false;
-
-    // For use in calculating log base 10. A log times this is a log base 10.
-    protected static final double _LOG10SCALE = 1 / Math.log(10);
-
-    /** @serial Whether to draw a background grid. */
-    protected boolean _grid = true;
-
-    /** @serial Whether to wrap the X axis. */
-    protected boolean _wrap = false;
-
-    /** @serial The high range of the X axis for wrapping. */
-    protected double _wrapHigh;
-
-    /** @serial The low range of the X axis for wrapping. */
-    protected double _wrapLow;
-
-    /** @serial Color of the background, settable from HTML. */
-    protected Color _background = Color.white;
-
-    /** @serial Color of the foreground, settable from HTML. */
-    protected Color _foreground = Color.black;
-
-    /** @serial Top padding.
-     *  Derived classes can increment these to make space around the plot.
-     */
-    /* Steven Phillips replaced "protected" with "public" from the next four */
-    public int _topPadding = 10;
-
-    /** @serial Bottom padding.
-     *  Derived classes can increment these to make space around the plot.
-     */
-    public int _bottomPadding = 5;
-
-    /** @serial Right padding.
-     *  Derived classes can increment these to make space around the plot.
-     */
-    public int _rightPadding = 10;
-
-    /** @serial Left padding.
-     *  Derived classes can increment these to make space around the plot.
-     */
-    public int _leftPadding = 10;
-
-    // The naming convention is: "_ulx" = "upper left x", where "x" is
-    // the horizontal dimension.
-
-    /** The x value of the upper left corner of the plot rectangle in pixels. */
-    protected int _ulx = 1;
-
-    /** The y value of the upper left corner of the plot rectangle in pixels. */
-    protected int _uly = 1;
-
-    /** The x value of the lower right corner of
-     * the plot rectangle in pixels. */
-    protected int _lrx = 100;
-
-    /** The y value of the lower right corner of
-     * the plot rectangle in pixels. */
-    protected int _lry = 100;
-
-    /** User specified plot rectangle, null if none specified.
-     *  @see #setPlotRectangle(Rectangle)
-     */
-    protected Rectangle _specifiedPlotRectangle = null;
-
-    /** Scaling used for the vertical axis in plotting points.
-     *  The units are pixels/unit, where unit is the units of the Y axis.
-     */
-    protected double _yscale = 1.0;
-
-    /** Scaling used for the horizontal axis in plotting points.
-     *  The units are pixels/unit, where unit is the units of the X axis.
-     */
-    protected double _xscale = 1.0;
-
-    /** @serial Indicator whether to use _colors. */
-    protected boolean _usecolor = true;
-
-    // Default _colors, by data set.
-    // There are 11 colors so that combined with the
-    // 10 marks of the Plot class, we can distinguish 110
-    // distinct data sets.
-    static protected Color[] _colors = {
-        new Color(0xff0000), // red
-        new Color(0x0000ff), // blue
-        new Color(0x00aaaa), // cyan-ish
-        new Color(0x000000), // black
-        new Color(0xffa500), // orange
-        new Color(0x53868b), // cadetblue4
-        new Color(0xff7f50), // coral
-        new Color(0x45ab1f), // dark green-ish
-        new Color(0x90422d), // sienna-ish
-        new Color(0xa0a0a0), // grey-ish
-        new Color(0x14ff14), // green-ish
-    };
-
-    /** @serial Width and height of component in pixels. */
-    protected int _width = 500;
-
-    /** @serial Width and height of component in pixels. */
-    protected int _height = 300;
-
-    /** @serial Width and height of component in pixels. */
-    protected int _preferredWidth = 500;
-
-    /** @serial Width and height of component in pixels. */
-    protected int _preferredHeight = 300;
-
-    /** @serial Indicator that size has been set. */
-
-    //protected boolean _sizeHasBeenSet = false;
-
-    /** @serial The document base we use to find the _filespec.
-     * NOTE: Use of this variable is deprecated.  But it is made available
-     * to derived classes for backward compatibility.
-     * FIXME: Sun's appletviewer gives an exception if this is protected.
-     * Why?? So we make it temporarily public.
-     */
-    public URL _documentBase = null;
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         private methods                   ////
 
     /*
      * Draw the legend in the upper right corner and return the width
@@ -3193,7 +3485,7 @@ public class PlotBox extends JPanel implements Printable {
      * Based on initGrid() from xgraph.c by David Harrison.
      */
     private Vector _gridInit(double low, double step, boolean labeled,
-            Vector oldgrid) {
+                             Vector oldgrid) {
         // How log axes work:
         // _gridInit() creates a vector with the values to use for the
         // log axes.  For example, the vector might contain
@@ -3265,7 +3557,7 @@ public class PlotBox extends JPanel implements Printable {
                 // trying to add.
                 while ((oldgridi < oldgrid.size())
                         && (((Double) oldgrid.elementAt(oldgridi))
-                                .doubleValue() < logval)) {
+                        .doubleValue() < logval)) {
                     oldgridi++;
                 }
 
@@ -3273,7 +3565,7 @@ public class PlotBox extends JPanel implements Printable {
                     // Using == on doubles is bad if the numbers are close,
                     // but not exactly equal.
                     if (Math.abs(((Double) oldgrid.elementAt(oldgridi))
-                                .doubleValue() - logval) > 0.00001) {
+                            .doubleValue() - logval) > 0.00001) {
                         grid.addElement(new Double(logval));
                     }
                 } else {
@@ -3299,8 +3591,8 @@ public class PlotBox extends JPanel implements Printable {
         // or equal to x.  This sets us up to process the first point.
         for (_gridCurJuke = -1;
              ((_gridCurJuke + 1) < grid.size())
-                 && (x >= ((Double) grid.elementAt(_gridCurJuke + 1))
-                         .doubleValue()); _gridCurJuke++) {
+                     && (x >= ((Double) grid.elementAt(_gridCurJuke + 1))
+                     .doubleValue()); _gridCurJuke++) {
         }
 
         return grid;
@@ -3315,7 +3607,7 @@ public class PlotBox extends JPanel implements Printable {
 
         for (i = 0;
              (i < grid.size())
-                 && (x >= ((Double) grid.elementAt(i)).doubleValue());
+                     && (x >= ((Double) grid.elementAt(i)).doubleValue());
              i++) {
         }
 
@@ -3337,7 +3629,7 @@ public class PlotBox extends JPanel implements Printable {
      * Based on stepGrid() from xgraph.c by David Harrison.
      */
     private double _gridStep(Vector grid, double pos, double step,
-            boolean logflag) {
+                             boolean logflag) {
         if (logflag) {
             if (++_gridCurJuke >= grid.size()) {
                 _gridCurJuke = 0;
@@ -3349,7 +3641,7 @@ public class PlotBox extends JPanel implements Printable {
             }
 
             return _gridBase
-                + ((Double) grid.elementAt(_gridCurJuke)).doubleValue();
+                    + ((Double) grid.elementAt(_gridCurJuke)).doubleValue();
         } else {
             return pos + step;
         }
@@ -3476,8 +3768,9 @@ public class PlotBox extends JPanel implements Printable {
         }
     }
 
-    /** Return a default set of rendering hints for image export, which
-     *  specifies the use of anti-aliasing.
+    /**
+     * Return a default set of rendering hints for image export, which
+     * specifies the use of anti-aliasing.
      */
     private RenderingHints _defaultImageRenderingHints() {
         RenderingHints hints = new RenderingHints(null);
@@ -3559,7 +3852,7 @@ public class PlotBox extends JPanel implements Printable {
         _xExp = (int) Math.floor(Math.log(largest) * _LOG10SCALE);
 
         // Use the exponent only if it's larger than 1 in magnitude.
-	// Steven Phillips changed the >1 to >4 and the <-1 to <-2
+        // Steven Phillips changed the >1 to >4 and the <-1 to <-2
         if ((_xExp > 4) || (_xExp < -2)) {
             double xs = 1.0 / Math.pow(10.0, (double) _xExp);
             _xtickMin = _xMin * xs;
@@ -3610,7 +3903,7 @@ public class PlotBox extends JPanel implements Printable {
         _yExp = (int) Math.floor(Math.log(largest) * _LOG10SCALE);
 
         // Use the exponent only if it's larger than 1 in magnitude.
-	// Steven Phillips changed the >1 to >3 and the <-1 to <-2
+        // Steven Phillips changed the >1 to >3 and the <-1 to <-2
         if ((_yExp > 3) || (_yExp < -2)) {
             double ys = 1.0 / Math.pow(10.0, (double) _yExp);
             _ytickMin = _yMin * ys;
@@ -3893,163 +4186,6 @@ public class PlotBox extends JPanel implements Printable {
         _zooming = true;
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         private variables                 ////
-
-    /** @serial Indicator of whether actions are deferred. */
-    private boolean _actionsDeferred = false;
-
-    /** @serial List of deferred actions. */
-    private List _deferredActions;
-
-    /** @serial The file to be opened. */
-    private String _filespec = null;
-
-    // Call setXORMode with a hardwired color because
-    // _background does not work in an application,
-    // and _foreground does not work in an applet.
-    // NOTE: For some reason, this comes out blue, which is fine...
-    private static final Color _boxColor = Color.orange;
-
-    /** @serial The range of the plot as labeled
-     * (multiply by 10^exp for actual range.
-     */
-    private double _ytickMax = 0.0;
-
-    /** @serial The range of the plot as labeled
-     * (multiply by 10^exp for actual range.
-     */
-    private double _ytickMin = 0.0;
-
-    /** @serial The range of the plot as labeled
-     * (multiply by 10^exp for actual range.
-     */
-    private double _xtickMax = 0.0;
-
-    /** @serial The range of the plot as labeled
-     * (multiply by 10^exp for actual range.
-     */
-    private double _xtickMin = 0.0;
-
-    /** @serial The power of ten by which the range numbers should
-     *  be multiplied.
-     */
-    private int _yExp = 0;
-
-    /** @serial The power of ten by which the range numbers should
-     *  be multiplied.
-     */
-    private int _xExp = 0;
-
-    /** @serial Scaling used in making tick marks. */
-    private double _ytickscale = 0.0;
-
-    /** @serial Scaling used in making tick marks. */
-    private double _xtickscale = 0.0;
-
-    /** @serial Font information. */
-    private Font _labelFont = null;
-
-    /** @serial Font information. */
-    private Font _superscriptFont = null;
-
-    /** @serial Font information. */
-    private Font _titleFont = null;
-
-    /** @serial FontMetric information. */
-    private FontMetrics _labelFontMetrics = null;
-
-    /** @serial FontMetric information. */
-    private FontMetrics _superscriptFontMetrics = null;
-
-    /** @serial FontMetric information. */
-    private FontMetrics _titleFontMetrics = null;
-
-    // Number format cache used by _formatNum.
-    // See the comment in _formatNum for more information.
-    // private transient NumberFormat _numberFormat = null;
-    // Used for log axes. Index into vector of axis labels.
-    private transient int _gridCurJuke = 0;
-
-    // Used for log axes.  Base of the grid.
-    private transient double _gridBase = 0.0;
-
-    // An array of strings for reporting errors.
-    private transient String[] _errorMsg;
-
-    /** @serial The title and label strings. */
-    private String _xlabel;
-
-    /** @serial The title and label strings. */
-    private String _ylabel;
-
-    /** @serial The title and label strings. */
-    private String _title;
-
-    /** @serial Legend information. */
-    private Vector _legendStrings = new Vector();
-
-    /** @serial Legend information. */
-    private Vector _legendDatasets = new Vector();
-
-    /** @serial If XTicks or YTicks are given/ */
-    private Vector _xticks = null;
-
-    /** @serial If XTicks or YTicks are given/ */
-    private Vector _xticklabels = null;
-
-    /** @serial If XTicks or YTicks are given/ */
-    private Vector _yticks = null;
-
-    /** @serial If XTicks or YTicks are given/ */
-    private Vector _yticklabels = null;
-
-    // A button for filling the plot
-    private transient JButton _fillButton = null;
-
-    // A button for formatting the plot
-    private transient JButton _formatButton = null;
-
-    // Indicator of whether X and Y range has been first specified.
-    boolean _originalXRangeGiven = false;
-
-    // Indicator of whether X and Y range has been first specified.
-    boolean _originalYRangeGiven = false;
-
-    // First values specified to setXRange() and setYRange().
-    double _originalXlow = 0.0;
-
-    // First values specified to setXRange() and setYRange().
-    double _originalXhigh = 0.0;
-
-    // First values specified to setXRange() and setYRange().
-    double _originalYlow = 0.0;
-
-    // First values specified to setXRange() and setYRange().
-    double _originalYhigh = 0.0;
-
-    // An offscreen buffer for improving plot performance.
-    protected transient BufferedImage _plotImage = null;
-
-    // A button for printing the plot
-    private transient JButton _printButton = null;
-
-    // A button for filling the plot
-    private transient JButton _resetButton = null;
-
-    // Variables keeping track of the interactive zoom box.
-    // Initialize to impossible values.
-    private transient int _zoomx = -1;
-    private transient int _zoomy = -1;
-    private transient int _zoomxn = -1;
-    private transient int _zoomyn = -1;
-
-    // Control whether we are zooming in or out.
-    private transient boolean _zoomin = false;
-    private transient boolean _zoomout = false;
-    private transient boolean _drawn = false;
-    private transient boolean _zooming = false;
-
     // NOTE: It is unfortunate to have to include the DTD here, but there
     // seems to be no other way to ensure that the generated data exactly
     // matches the DTD.
@@ -4198,98 +4334,101 @@ public class PlotBox extends JPanel implements Printable {
     }
 
     class CommandListener implements KeyListener {
+        private boolean _control = false;
+        private boolean _shift = false;
+
         public void keyPressed(KeyEvent e) {
             int keycode = e.getKeyCode();
 
             switch (keycode) {
-            case KeyEvent.VK_CONTROL:
-                _control = true;
-                break;
+                case KeyEvent.VK_CONTROL:
+                    _control = true;
+                    break;
 
-            case KeyEvent.VK_SHIFT:
-                _shift = true;
-                break;
+                case KeyEvent.VK_SHIFT:
+                    _shift = true;
+                    break;
 
-            case KeyEvent.VK_C:
+                case KeyEvent.VK_C:
 
-                if (_control) {
-                    // The "null" sends the output to the clipboard.
-                    export(null);
+                    if (_control) {
+                        // The "null" sends the output to the clipboard.
+                        export(null);
 
-                    String message = "Encapsulated PostScript (EPS) "
-                        + "exported to clipboard.";
-                    JOptionPane.showMessageDialog(PlotBox.this, message,
-                            "Ptolemy Plot Message", JOptionPane.INFORMATION_MESSAGE);
-                }
+                        String message = "Encapsulated PostScript (EPS) "
+                                + "exported to clipboard.";
+                        JOptionPane.showMessageDialog(PlotBox.this, message,
+                                "Ptolemy Plot Message", JOptionPane.INFORMATION_MESSAGE);
+                    }
 
-                break;
+                    break;
 
-            case KeyEvent.VK_D:
+                case KeyEvent.VK_D:
 
-                if (!_control && _shift) {
-                    write(System.out);
+                    if (!_control && _shift) {
+                        write(System.out);
 
-                    String message = "Plot data sent to standard out.";
-                    JOptionPane.showMessageDialog(PlotBox.this, message,
-                            "Ptolemy Plot Message", JOptionPane.INFORMATION_MESSAGE);
-                }
+                        String message = "Plot data sent to standard out.";
+                        JOptionPane.showMessageDialog(PlotBox.this, message,
+                                "Ptolemy Plot Message", JOptionPane.INFORMATION_MESSAGE);
+                    }
 
-                if (_control) {
-                    // xgraph and many other Unix apps use Control-D to exit
-                    System.exit(1);
-                }
+                    if (_control) {
+                        // xgraph and many other Unix apps use Control-D to exit
+                        System.exit(1);
+                    }
 
-                break;
+                    break;
 
-            case KeyEvent.VK_E:
+                case KeyEvent.VK_E:
 
-                if (!_control && _shift) {
-                    export(System.out);
+                    if (!_control && _shift) {
+                        export(System.out);
 
-                    String message = "Encapsulated PostScript (EPS) "
-                        + "exported to standard out.";
-                    JOptionPane.showMessageDialog(PlotBox.this, message,
-                            "Ptolemy Plot Message", JOptionPane.INFORMATION_MESSAGE);
-                }
+                        String message = "Encapsulated PostScript (EPS) "
+                                + "exported to standard out.";
+                        JOptionPane.showMessageDialog(PlotBox.this, message,
+                                "Ptolemy Plot Message", JOptionPane.INFORMATION_MESSAGE);
+                    }
 
-                break;
+                    break;
 
-            case KeyEvent.VK_F:
+                case KeyEvent.VK_F:
 
-                if (!_control && _shift) {
-                    fillPlot();
-                }
+                    if (!_control && _shift) {
+                        fillPlot();
+                    }
 
-                break;
+                    break;
 
-            case KeyEvent.VK_H:
+                case KeyEvent.VK_H:
 
-                if (!_control && _shift) {
-                    _help();
-                }
+                    if (!_control && _shift) {
+                        _help();
+                    }
 
-                break;
+                    break;
 
-            case KeyEvent.VK_Q:
+                case KeyEvent.VK_Q:
 
-                if (!_control) {
-                    // xv uses q to quit.
-                    System.exit(1);
-                }
+                    if (!_control) {
+                        // xv uses q to quit.
+                        System.exit(1);
+                    }
 
-                break;
+                    break;
 
-            case KeyEvent.VK_SLASH:
+                case KeyEvent.VK_SLASH:
 
-                if (_shift) {
-                    // Question mark is SHIFT-SLASH
-                    _help();
-                }
+                    if (_shift) {
+                        // Question mark is SHIFT-SLASH
+                        _help();
+                    }
 
-                break;
+                    break;
 
-            default:
-                // None
+                default:
+                    // None
             }
         }
 
@@ -4297,16 +4436,16 @@ public class PlotBox extends JPanel implements Printable {
             int keycode = e.getKeyCode();
 
             switch (keycode) {
-            case KeyEvent.VK_CONTROL:
-                _control = false;
-                break;
+                case KeyEvent.VK_CONTROL:
+                    _control = false;
+                    break;
 
-            case KeyEvent.VK_SHIFT:
-                _shift = false;
-                break;
+                case KeyEvent.VK_SHIFT:
+                    _shift = false;
+                    break;
 
-            default:
-                // None
+                default:
+                    // None
             }
         }
 
@@ -4314,8 +4453,5 @@ public class PlotBox extends JPanel implements Printable {
         // It always gets "unknown key code".
         public void keyTyped(KeyEvent e) {
         }
-
-        private boolean _control = false;
-        private boolean _shift = false;
     }
 }

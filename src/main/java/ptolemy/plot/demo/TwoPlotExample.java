@@ -26,40 +26,38 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot.demo;
 
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
+import ptolemy.plot.Plot;
+
+import javax.swing.*;
+import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
-
-import ptolemy.plot.Plot;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// TwoPlotExample
 
 /**
-   TwoPlotExample is a simple example that uses displays two plots side by side
-   To compile and run this application, do the following:
-   <pre>
-   javac -classpath ../../.. TwoPlotExample.java
-   java -classpath ../../.. ptolemy.plot.demo.TwoPlotExample
-   </pre>
-
-   @author Christopher Hylands
-   @version $Id: TwoPlotExample.java,v 1.34 2005/04/29 20:03:27 cxh Exp $
-   @since Ptolemy II 0.2
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-*/
+ * TwoPlotExample is a simple example that uses displays two plots side by side
+ * To compile and run this application, do the following:
+ * <pre>
+ * javac -classpath ../../.. TwoPlotExample.java
+ * java -classpath ../../.. ptolemy.plot.demo.TwoPlotExample
+ * </pre>
+ *
+ * @author Christopher Hylands
+ * @version $Id: TwoPlotExample.java,v 1.34 2005/04/29 20:03:27 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @since Ptolemy II 0.2
+ */
 public class TwoPlotExample extends JFrame {
-    /** We use a constructor here so that we can call methods
-     *  directly on the Frame.  The main method is static
-     *  so getting at the Frame is a little trickier.
+    /**
+     * We use a constructor here so that we can call methods
+     * directly on the Frame.  The main method is static
+     * so getting at the Frame is a little trickier.
      */
     TwoPlotExample() {
         // Instantiate the two plots.
@@ -161,18 +159,19 @@ public class TwoPlotExample extends JFrame {
         show();
     }
 
-    /** main method called in a standalone java application.
-     *  We simple instantiate this class, most of the work
-     *  happens in the constructor.
+    /**
+     * main method called in a standalone java application.
+     * We simple instantiate this class, most of the work
+     * happens in the constructor.
      */
     public static void main(String[] args) {
         // We execute everything in the Swing Event Thread, see
         // the comment
         Runnable doAction = new Runnable() {
-                public void run() {
-                    new TwoPlotExample();
-                }
-            };
+            public void run() {
+                new TwoPlotExample();
+            }
+        };
 
         SwingUtilities.invokeLater(doAction);
     }

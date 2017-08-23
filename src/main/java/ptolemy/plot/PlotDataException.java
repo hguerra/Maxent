@@ -32,15 +32,15 @@ package ptolemy.plot;
 //// PlotDataException
 
 /**
-   Exception thrown by plot classes if there are format
-   problems with the data to be plotted.
-
-   @author Christopher Hylands
-   @version $Id: PlotDataException.java,v 1.28 2005/03/01 01:00:40 cxh Exp $
-   @since Ptolemy II 0.2
-   @Pt.ProposedRating Yellow (cxh)
-   @Pt.AcceptedRating Yellow (cxh)
-*/
+ * Exception thrown by plot classes if there are format
+ * problems with the data to be plotted.
+ *
+ * @author Christopher Hylands
+ * @version $Id: PlotDataException.java,v 1.28 2005/03/01 01:00:40 cxh Exp $
+ * @Pt.ProposedRating Yellow (cxh)
+ * @Pt.AcceptedRating Yellow (cxh)
+ * @since Ptolemy II 0.2
+ */
 class PlotDataException extends Throwable {
     public PlotDataException() {
         super();

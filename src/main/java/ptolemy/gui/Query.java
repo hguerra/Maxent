@@ -27,56 +27,16 @@ COPYRIGHTENDKEY
 */
 package ptolemy.gui;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.Vector;
-
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JColorChooser;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.JSlider;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.JToggleButton;
+import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.plaf.basic.BasicComboBoxEditor;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.util.*;
 
 
 // Avoid importing any packages from ptolemy.* here so that we
@@ -85,25 +45,88 @@ import javax.swing.plaf.basic.BasicComboBoxEditor;
 //// Query
 
 /**
-   Create a query with various types of entry boxes and controls.  Each type
-   of entry box has a colon and space appended to the end of its label, to
-   ensure uniformity.
-   Here is one example of creating a query with a radio button:
-   <pre>
-   query = new Query();
-   getContentPane().add(query);
-   String[] options = {"water", "soda", "juice", "none"};
-   query.addRadioButtons("radio", "Radio buttons", options, "water");
-   </pre>
-
-   @author  Edward A. Lee, Manda Sutijono, Elaine Cheong
-   @version $Id: Query.java,v 1.116 2005/04/26 05:07:51 cxh Exp $
-   @since Ptolemy II 0.3
-   @Pt.ProposedRating Yellow (eal)
-   @Pt.AcceptedRating Red (eal)
-*/
+ * Create a query with various types of entry boxes and controls.  Each type
+ * of entry box has a colon and space appended to the end of its label, to
+ * ensure uniformity.
+ * Here is one example of creating a query with a radio button:
+ * <pre>
+ * query = new Query();
+ * getContentPane().add(query);
+ * String[] options = {"water", "soda", "juice", "none"};
+ * query.addRadioButtons("radio", "Radio buttons", options, "water");
+ * </pre>
+ *
+ * @author Edward A. Lee, Manda Sutijono, Elaine Cheong
+ * @version $Id: Query.java,v 1.116 2005/04/26 05:07:51 cxh Exp $
+ * @Pt.ProposedRating Yellow (eal)
+ * @Pt.AcceptedRating Red (eal)
+ * @since Ptolemy II 0.3
+ */
 public class Query extends JPanel {
-    /** Construct a panel with no entries in it.
+    /**
+     * The default height of entries created with addText().
+     */
+    public static final int DEFAULT_ENTRY_HEIGHT = 10;
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         public methods                    ////
+    /**
+     * The default width of entries created with addLine().
+     */
+    public static final int DEFAULT_ENTRY_WIDTH = 30;
+    /**
+     * The background color as set by setBackground().
+     * This defaults to null, which indicates that the background
+     * is the same as the container.
+     */
+    protected Color _background = null;
+    /**
+     * Standard constraints for use with _grid.
+     */
+    protected GridBagConstraints _constraints;
+    /**
+     * Layout control.
+     */
+    protected GridBagLayout _grid;
+    /**
+     * List of registered listeners.
+     */
+    protected Vector _listeners;
+    ///////////////////////////////////////////////////////////////////
+    ////                         private variables                 ////
+    // The number of columns.
+    private int _columns = 1;
+    // The hashtable of items in the query.
+    private Map _entries = new HashMap();
+    // A panel within which the entries are placed.
+    private JPanel _entryPanel = new JPanel();
+    // A scroll pane that contains the _entryPanel.
+    private JScrollPane _entryScrollPane;
+    // The number of lines in a text box.
+    private int _height = DEFAULT_ENTRY_HEIGHT;
+    // The hashtable of labels in the query.
+    private Map _labels = new HashMap();
+    // Left padding insets.
+    private Insets _leftPadding = new Insets(0, 10, 0, 0);
+    // Area for messages.
+    private JTextArea _messageArea = null;
+    // A scroll pane that contains the _messageArea.
+    private JScrollPane _messageScrollPane;
+    // True if we have added the _messageScrollPane
+    private boolean _messageScrollPaneAdded = false;
+    // No padding insets.
+    private Insets _noPadding = new Insets(0, 0, 0, 0);
+    // The hashtable of previous values, indexed by entry name.
+    private Map _previous = new HashMap();
+    // The sum of the height of the widgets added using _addPair
+    // If you adjust this, try the GR/Pendulum demo, which has
+    // only one parameter.
+    private int _widgetsHeight = 20;
+    // The number of horizontal characters in a text box.
+    private int _width = DEFAULT_ENTRY_WIDTH;
+
+    /**
+     * Construct a panel with no entries in it.
      */
     public Query() {
         _grid = new GridBagLayout();
@@ -169,13 +192,12 @@ public class Query extends JPanel {
         _entryPanel.setBackground(null);
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         public methods                    ////
-
-    /** Create an on-off check box.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param defaultValue The default value (true for on).
+    /**
+     * Create an on-off check box.
+     *
+     * @param name         The name used to identify the entry (when calling get).
+     * @param label        The label to attach to the entry.
+     * @param defaultValue The default value (true for on).
      */
     public void addCheckBox(String name, String label, boolean defaultValue) {
         JLabel lbl = new JLabel(label + ": ");
@@ -192,44 +214,50 @@ public class Query extends JPanel {
         checkbox.addItemListener(new QueryItemListener(name));
     }
 
-    /** Create an uneditable choice menu.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param values The list of possible choices.
-     *  @param defaultChoice Default choice.
+    /**
+     * Create an uneditable choice menu.
+     *
+     * @param name          The name used to identify the entry (when calling get).
+     * @param label         The label to attach to the entry.
+     * @param values        The list of possible choices.
+     * @param defaultChoice Default choice.
      */
     public void addChoice(String name, String label, String[] values,
-            String defaultChoice) {
+                          String defaultChoice) {
         addChoice(name, label, values, defaultChoice, false);
     }
 
-    /** Create a choice menu.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param values The list of possible choices.
-     *  @param defaultChoice Default choice.
-     *  @param editable True if an arbitrary choice can be entered, in addition
-     *  to the choices in values.
+    /**
+     * Create a choice menu.
+     *
+     * @param name          The name used to identify the entry (when calling get).
+     * @param label         The label to attach to the entry.
+     * @param values        The list of possible choices.
+     * @param defaultChoice Default choice.
+     * @param editable      True if an arbitrary choice can be entered, in addition
+     *                      to the choices in values.
      */
     public void addChoice(String name, String label, String[] values,
-            String defaultChoice, boolean editable) {
+                          String defaultChoice, boolean editable) {
         addChoice(name, label, values, defaultChoice, editable, Color.white,
                 Color.black);
     }
 
-    /** Create a choice menu.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param values The list of possible choices.
-     *  @param defaultChoice Default choice.
-     *  @param editable True if an arbitrary choice can be entered, in addition
-     *   to the choices in values.
-     *  @param background The background color for the editable part.
-     *  @param foreground The foreground color for the editable part.
+    /**
+     * Create a choice menu.
+     *
+     * @param name          The name used to identify the entry (when calling get).
+     * @param label         The label to attach to the entry.
+     * @param values        The list of possible choices.
+     * @param defaultChoice Default choice.
+     * @param editable      True if an arbitrary choice can be entered, in addition
+     *                      to the choices in values.
+     * @param background    The background color for the editable part.
+     * @param foreground    The foreground color for the editable part.
      */
     public void addChoice(String name, String label, String[] values,
-            String defaultChoice, boolean editable, final Color background,
-            final Color foreground) {
+                          String defaultChoice, boolean editable, final Color background,
+                          final Color foreground) {
         JLabel lbl = new JLabel(label + ": ");
         lbl.setBackground(_background);
 
@@ -241,13 +269,13 @@ public class Query extends JPanel {
         // custom editor.  #$(#&$#(@#!!
         // combobox.setBackground(background);
         combobox.setEditor(new BasicComboBoxEditor() {
-                public Component getEditorComponent() {
-                    Component result = super.getEditorComponent();
-                    result.setBackground(background);
-                    result.setForeground(foreground);
-                    return result;
-                }
-            });
+            public Component getEditorComponent() {
+                Component result = super.getEditorComponent();
+                result.setBackground(background);
+                result.setForeground(foreground);
+                return result;
+            }
+        });
         combobox.setSelectedItem(defaultChoice);
         _addPair(name, lbl, combobox, combobox);
 
@@ -256,13 +284,15 @@ public class Query extends JPanel {
         combobox.addItemListener(new QueryItemListener(name));
     }
 
-    /** Create a ColorChooser.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param defaultColor The default color to use.
+    /**
+     * Create a ColorChooser.
+     *
+     * @param name         The name used to identify the entry (when calling get).
+     * @param label        The label to attach to the entry.
+     * @param defaultColor The default color to use.
      */
     public void addColorChooser(String name, String label,
-            String defaultColor) {
+                                String defaultColor) {
         JLabel lbl = new JLabel(label + ": ");
         lbl.setBackground(_background);
 
@@ -271,11 +301,13 @@ public class Query extends JPanel {
         _addPair(name, lbl, colorChooser, colorChooser);
     }
 
-    /** Create a simple one-line text display, a non-editable value that
-     *  is set externally using the setDisplay() method.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param theValue Default string to display.
+    /**
+     * Create a simple one-line text display, a non-editable value that
+     * is set externally using the setDisplay() method.
+     *
+     * @param name     The name used to identify the entry (when calling get).
+     * @param label    The label to attach to the entry.
+     * @param theValue Default string to display.
      */
     public void addDisplay(String name, String label, String theValue) {
         JLabel lbl = new JLabel(label + ": ");
@@ -290,72 +322,80 @@ public class Query extends JPanel {
         _addPair(name, lbl, displayField, displayField);
     }
 
-    /** Create a FileChooser that selects files only, not directories, and
-     *  has the default colors (white in the background, black in the
-     *  foreground).
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param defaultName The default file name to use.
-     *  @param base The URI with respect to which to give
-     *   relative file names, or null to give absolute file name.
-     *  @param startingDirectory The directory to open the file chooser in.
+    /**
+     * Create a FileChooser that selects files only, not directories, and
+     * has the default colors (white in the background, black in the
+     * foreground).
+     *
+     * @param name              The name used to identify the entry (when calling get).
+     * @param label             The label to attach to the entry.
+     * @param defaultName       The default file name to use.
+     * @param base              The URI with respect to which to give
+     *                          relative file names, or null to give absolute file name.
+     * @param startingDirectory The directory to open the file chooser in.
      */
     public void addFileChooser(String name, String label, String defaultName,
-            URI base, File startingDirectory) {
+                               URI base, File startingDirectory) {
         addFileChooser(name, label, defaultName, base, startingDirectory, true,
                 false, Color.white, Color.black);
     }
 
-    /** Create a FileChooser with default colors (white in the foreground,
-     *  black in the background).
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param defaultName The default file name to use.
-     *  @param base The URI with respect to which to give
-     *   relative file names, or null to give absolute file name.
-     *  @param startingDirectory The directory to open the file chooser in.
-     *  @param allowFiles True if regular files may be chosen.
-     *  @param allowDirectories True if directories may be chosen.
+    /**
+     * Create a FileChooser with default colors (white in the foreground,
+     * black in the background).
+     *
+     * @param name              The name used to identify the entry (when calling get).
+     * @param label             The label to attach to the entry.
+     * @param defaultName       The default file name to use.
+     * @param base              The URI with respect to which to give
+     *                          relative file names, or null to give absolute file name.
+     * @param startingDirectory The directory to open the file chooser in.
+     * @param allowFiles        True if regular files may be chosen.
+     * @param allowDirectories  True if directories may be chosen.
      */
     public void addFileChooser(String name, String label, String defaultName,
-            URI base, File startingDirectory, boolean allowFiles,
-            boolean allowDirectories) {
+                               URI base, File startingDirectory, boolean allowFiles,
+                               boolean allowDirectories) {
         addFileChooser(name, label, defaultName, base, startingDirectory,
                 allowFiles, allowDirectories, Color.white, Color.black);
     }
 
-    /** Create a FileChooser that selects files only, not directories.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param defaultName The default file name to use.
-     *  @param base The URI with respect to which to give
-     *   relative file names, or null to give absolute file name.
-     *  @param startingDirectory The directory to open the file chooser in.
-     *  @param background The background color for the text entry box.
-     *  @param foreground The foreground color for the text entry box.
+    /**
+     * Create a FileChooser that selects files only, not directories.
+     *
+     * @param name              The name used to identify the entry (when calling get).
+     * @param label             The label to attach to the entry.
+     * @param defaultName       The default file name to use.
+     * @param base              The URI with respect to which to give
+     *                          relative file names, or null to give absolute file name.
+     * @param startingDirectory The directory to open the file chooser in.
+     * @param background        The background color for the text entry box.
+     * @param foreground        The foreground color for the text entry box.
      */
     public void addFileChooser(String name, String label, String defaultName,
-            URI base, File startingDirectory,
-            Color background, Color foreground) {
+                               URI base, File startingDirectory,
+                               Color background, Color foreground) {
         addFileChooser(name, label, defaultName, base, startingDirectory, true,
                 false, background, foreground);
     }
 
-    /** Create a FileChooser.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param defaultName The default file name to use.
-     *  @param base The URI with respect to which to give
-     *   relative file names, or null to give absolute file name.
-     *  @param startingDirectory The directory to open the file chooser in.
-     *  @param allowFiles True if regular files may be chosen.
-     *  @param allowDirectories True if directories may be chosen.
-     *  @param background The background color for the text entry box.
-     *  @param foreground The foreground color for the text entry box.
+    /**
+     * Create a FileChooser.
+     *
+     * @param name              The name used to identify the entry (when calling get).
+     * @param label             The label to attach to the entry.
+     * @param defaultName       The default file name to use.
+     * @param base              The URI with respect to which to give
+     *                          relative file names, or null to give absolute file name.
+     * @param startingDirectory The directory to open the file chooser in.
+     * @param allowFiles        True if regular files may be chosen.
+     * @param allowDirectories  True if directories may be chosen.
+     * @param background        The background color for the text entry box.
+     * @param foreground        The foreground color for the text entry box.
      */
     public void addFileChooser(String name, String label, String defaultName,
-            URI base, File startingDirectory, boolean allowFiles,
-            boolean allowDirectories, Color background, Color foreground) {
+                               URI base, File startingDirectory, boolean allowFiles,
+                               boolean allowDirectories, Color background, Color foreground) {
         JLabel lbl = new JLabel(label + ": ");
         lbl.setBackground(_background);
 
@@ -365,30 +405,34 @@ public class Query extends JPanel {
         _addPair(name, lbl, fileChooser, fileChooser);
     }
 
-    /** Create a single-line entry box with the specified name, label, and
-     *  default value.  To control the width of the box, call setTextWidth()
-     *  first.
-     *  @param name The name used to identify the entry (when accessing
-     *   the entry).
-     *  @param label The label to attach to the entry.
-     *  @param defaultValue Default value to appear in the entry box.
+    /**
+     * Create a single-line entry box with the specified name, label, and
+     * default value.  To control the width of the box, call setTextWidth()
+     * first.
+     *
+     * @param name         The name used to identify the entry (when accessing
+     *                     the entry).
+     * @param label        The label to attach to the entry.
+     * @param defaultValue Default value to appear in the entry box.
      */
     public void addLine(String name, String label, String defaultValue) {
         addLine(name, label, defaultValue, Color.white, Color.black);
     }
 
-    /** Create a single-line entry box with the specified name, label,
-     *  default value, and background color.  To control the width of
-     *  the box, call setTextWidth() first.
-     *  @param name The name used to identify the entry (when accessing
-     *   the entry).
-     *  @param label The label to attach to the entry.
-     *  @param defaultValue Default value to appear in the entry box.
-     *  @param background The background color.
-     *  @param foreground The foreground color.
+    /**
+     * Create a single-line entry box with the specified name, label,
+     * default value, and background color.  To control the width of
+     * the box, call setTextWidth() first.
+     *
+     * @param name         The name used to identify the entry (when accessing
+     *                     the entry).
+     * @param label        The label to attach to the entry.
+     * @param defaultValue Default value to appear in the entry box.
+     * @param background   The background color.
+     * @param foreground   The foreground color.
      */
     public void addLine(String name, String label, String defaultValue,
-            Color background, Color foreground) {
+                        Color background, Color foreground) {
         JLabel lbl = new JLabel(label + ": ");
         lbl.setBackground(_background);
 
@@ -415,43 +459,46 @@ public class Query extends JPanel {
         entryBox.addFocusListener(new QueryFocusListener(name));
     }
 
-    /** Create a single-line password box with the specified name, label, and
-     *  default value.  To control the width of the box, call setTextWidth()
-     *  first. A value that is entered in the password box should be
-     *  accessed using getCharArrayValue().  The value returned by
-     *  stringValue() is whatever you specify as a defaultValue.
-     *  @param name The name used to identify the entry (when accessing
-     *   the entry).
-     *  @param label The label to attach to the entry.
-     *  @param defaultValue Default value to appear in the entry box.
-     *  @since Ptolemy II 3.1
+    /**
+     * Create a single-line password box with the specified name, label, and
+     * default value.  To control the width of the box, call setTextWidth()
+     * first. A value that is entered in the password box should be
+     * accessed using getCharArrayValue().  The value returned by
+     * stringValue() is whatever you specify as a defaultValue.
+     *
+     * @param name         The name used to identify the entry (when accessing
+     *                     the entry).
+     * @param label        The label to attach to the entry.
+     * @param defaultValue Default value to appear in the entry box.
+     * @since Ptolemy II 3.1
      */
     public void addPassword(String name, String label, String defaultValue) {
         addPassword(name, label, defaultValue, Color.white, Color.black);
     }
 
-    /** Create a single-line password box with the specified name,
-     *  label, and default value.  To control the width of the box,
-     *  call setTextWidth() first.
-     *  To get the value, call getCharArrayValue().
-     *  Calling getStringValue() on a password entry will result in an
-     *  error because it is less secure to pass around passwords as
-     *  Strings than as arrays of characters.
-     *  <p>The underlying class that is used to implement the password
-     *  facility is javax.swing.JPasswordField.  For details about how to
-     *  use JPasswordField, see the
-     *  <a href="http://java.sun.com/docs/books/tutorial/uiswing/components/passwordfield.html" target="_top">Java Tutorial</a>
+    /**
+     * Create a single-line password box with the specified name,
+     * label, and default value.  To control the width of the box,
+     * call setTextWidth() first.
+     * To get the value, call getCharArrayValue().
+     * Calling getStringValue() on a password entry will result in an
+     * error because it is less secure to pass around passwords as
+     * Strings than as arrays of characters.
+     * <p>The underlying class that is used to implement the password
+     * facility is javax.swing.JPasswordField.  For details about how to
+     * use JPasswordField, see the
+     * <a href="http://java.sun.com/docs/books/tutorial/uiswing/components/passwordfield.html" target="_top">Java Tutorial</a>
      *
-     *  @param name The name used to identify the entry (when accessing
-     *   the entry).
-     *  @param label The label to attach to the entry.
-     *  @param defaultValue Default value to appear in the entry box.
-     *  @param background The background color.
-     *  @param foreground The foreground color.
-     *  @since Ptolemy II 3.1
+     * @param name         The name used to identify the entry (when accessing
+     *                     the entry).
+     * @param label        The label to attach to the entry.
+     * @param defaultValue Default value to appear in the entry box.
+     * @param background   The background color.
+     * @param foreground   The foreground color.
+     * @since Ptolemy II 3.1
      */
     public void addPassword(String name, String label, String defaultValue,
-            Color background, Color foreground) {
+                            Color background, Color foreground) {
         JLabel lbl = new JLabel(label + ": ");
         lbl.setBackground(_background);
 
@@ -478,19 +525,21 @@ public class Query extends JPanel {
         entryBox.addFocusListener(new QueryFocusListener(name));
     }
 
-    /** Add a listener.  The changed() method of the listener will be
-     *  called when any of the entries is changed.  Note that "line"
-     *  entries only trigger this call when Return or Enter is pressed, or
-     *  when the entry gains and then loses the keyboard focus.
-     *  Notice that the currently selected line loses focus when the
-     *  panel is destroyed, so notification of any changes that
-     *  have been made will be done at that time.  That notification
-     *  will occur in the UI thread, and may be later than expected.
-     *  Notification due to loss of focus only occurs if the value
-     *  of the entry has changed since the last notification.
-     *  If the listener has already been added, then do nothing.
-     *  @param listener The listener to add.
-     *  @see #removeQueryListener(QueryListener)
+    /**
+     * Add a listener.  The changed() method of the listener will be
+     * called when any of the entries is changed.  Note that "line"
+     * entries only trigger this call when Return or Enter is pressed, or
+     * when the entry gains and then loses the keyboard focus.
+     * Notice that the currently selected line loses focus when the
+     * panel is destroyed, so notification of any changes that
+     * have been made will be done at that time.  That notification
+     * will occur in the UI thread, and may be later than expected.
+     * Notification due to loss of focus only occurs if the value
+     * of the entry has changed since the last notification.
+     * If the listener has already been added, then do nothing.
+     *
+     * @param listener The listener to add.
+     * @see #removeQueryListener(QueryListener)
      */
     public void addQueryListener(QueryListener listener) {
         if (_listeners == null) {
@@ -504,15 +553,17 @@ public class Query extends JPanel {
         _listeners.add(listener);
     }
 
-    /** Create a bank of radio buttons.  A radio button provides a list of
-     *  choices, only one of which may be chosen at a time.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param values The list of possible choices.
-     *  @param defaultValue Default value.
+    /**
+     * Create a bank of radio buttons.  A radio button provides a list of
+     * choices, only one of which may be chosen at a time.
+     *
+     * @param name         The name used to identify the entry (when calling get).
+     * @param label        The label to attach to the entry.
+     * @param values       The list of possible choices.
+     * @param defaultValue Default value.
      */
     public void addRadioButtons(String name, String label, String[] values,
-            String defaultValue) {
+                                String defaultValue) {
         JLabel lbl = new JLabel(label + ": ");
         lbl.setBackground(_background);
 
@@ -554,16 +605,18 @@ public class Query extends JPanel {
         _addPair(name, lbl, buttonPanel, buttons);
     }
 
-    /** Create a bank of buttons that provides a list of
-     *  choices, any subset of which may be chosen at a time.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param values The list of possible choices.
-     *  @param initiallySelected The initially selected choices, or null
-     *   to indicate that none are selected.
+    /**
+     * Create a bank of buttons that provides a list of
+     * choices, any subset of which may be chosen at a time.
+     *
+     * @param name              The name used to identify the entry (when calling get).
+     * @param label             The label to attach to the entry.
+     * @param values            The list of possible choices.
+     * @param initiallySelected The initially selected choices, or null
+     *                          to indicate that none are selected.
      */
     public void addSelectButtons(String name, String label, String[] values,
-            Set initiallySelected) {
+                                 Set initiallySelected) {
         JLabel lbl = new JLabel(label + ": ");
         lbl.setBackground(_background);
 
@@ -604,18 +657,20 @@ public class Query extends JPanel {
         _addPair(name, lbl, buttonPanel, buttons);
     }
 
-    /** Create a slider with the specified name, label, default
-     *  value, maximum, and minimum.
-     *  @param name The name used to identify the slider.
-     *  @param label The label to attach to the slider.
-     *  @param defaultValue Initial position of slider.
-     *  @param maximum Maximum value of slider.
-     *  @param minimum Minimum value of slider.
-     *  @exception IllegalArgumentException If the desired default value
-     *   is not between the minimum and maximum.
+    /**
+     * Create a slider with the specified name, label, default
+     * value, maximum, and minimum.
+     *
+     * @param name         The name used to identify the slider.
+     * @param label        The label to attach to the slider.
+     * @param defaultValue Initial position of slider.
+     * @param maximum      Maximum value of slider.
+     * @param minimum      Minimum value of slider.
+     * @throws IllegalArgumentException If the desired default value
+     *                                  is not between the minimum and maximum.
      */
     public void addSlider(String name, String label, int defaultValue,
-            int minimum, int maximum) throws IllegalArgumentException {
+                          int minimum, int maximum) throws IllegalArgumentException {
         JLabel lbl = new JLabel(label + ": ");
 
         if (minimum > maximum) {
@@ -635,41 +690,47 @@ public class Query extends JPanel {
         slider.addChangeListener(new SliderListener(name));
     }
 
-    /**  Create a text area.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param theValue The value of this text area
+    /**
+     * Create a text area.
+     *
+     * @param name     The name used to identify the entry (when calling get).
+     * @param label    The label to attach to the entry.
+     * @param theValue The value of this text area
      */
     public void addTextArea(String name, String label, String theValue) {
         addTextArea(name, label, theValue, Color.white, Color.black, _height,
                 _width);
     }
 
-    /**  Create a text area.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param theValue The value of this text area.
-     *  @param background The background color.
-     *  @param foreground The foreground color.
+    /**
+     * Create a text area.
+     *
+     * @param name       The name used to identify the entry (when calling get).
+     * @param label      The label to attach to the entry.
+     * @param theValue   The value of this text area.
+     * @param background The background color.
+     * @param foreground The foreground color.
      */
     public void addTextArea(String name, String label, String theValue,
-            Color background, Color foreground) {
+                            Color background, Color foreground) {
         addTextArea(name, label, theValue, background, foreground, _height,
                 _width);
     }
 
-    /**  Create a text area with the specified height and width (in
-     *  characters).
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param label The label to attach to the entry.
-     *  @param theValue The value of this text area.
-     *  @param background The background color.
-     *  @param foreground The foreground color.
-     *  @param height The height.
-     *  @param width The width.
+    /**
+     * Create a text area with the specified height and width (in
+     * characters).
+     *
+     * @param name       The name used to identify the entry (when calling get).
+     * @param label      The label to attach to the entry.
+     * @param theValue   The value of this text area.
+     * @param background The background color.
+     * @param foreground The foreground color.
+     * @param height     The height.
+     * @param width      The width.
      */
     public void addTextArea(String name, String label, String theValue,
-            Color background, Color foreground, int height, int width) {
+                            Color background, Color foreground, int height, int width) {
         JLabel lbl = new JLabel(label + ": ");
         lbl.setBackground(_background);
 
@@ -683,40 +744,44 @@ public class Query extends JPanel {
         textArea.addFocusListener(new QueryFocusListener(name));
     }
 
-    /** Get the current value in the entry with the given name
-     *  and return as a boolean.  If the entry is not a checkbox,
-     *  then throw an exception.
-     *  @param name The name of the entry.
-     *  @deprecated Use getBooleanValue(String name) instead.
-     *  @return The state of the checkbox.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry is not a
-     *   checkbox.  This is a runtime exception, so it
-     *   need not be declared explicitly.
+    /**
+     * Get the current value in the entry with the given name
+     * and return as a boolean.  If the entry is not a checkbox,
+     * then throw an exception.
+     *
+     * @param name The name of the entry.
+     * @return The state of the checkbox.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry is not a
+     *                                  checkbox.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @deprecated Use getBooleanValue(String name) instead.
      */
     public boolean booleanValue(String name)
             throws NoSuchElementException, IllegalArgumentException {
         return getBooleanValue(name);
     }
 
-    /** Get the current value in the entry with the given name
-     *  and return as a double value.  If the entry is not a line,
-     *  then throw an exception.  If the value of the entry is not
-     *  a double, then throw an exception.
-     *  @param name The name of the entry.
-     *  @deprecated Use getDoubleValue(String name) instead.
-     *  @return The value currently in the entry as a double.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception NumberFormatException If the value of the entry cannot
-     *   be converted to a double.  This is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry is not a
-     *   line.  This is a runtime exception, so it
-     *   need not be declared explicitly.
+    /**
+     * Get the current value in the entry with the given name
+     * and return as a double value.  If the entry is not a line,
+     * then throw an exception.  If the value of the entry is not
+     * a double, then throw an exception.
+     *
+     * @param name The name of the entry.
+     * @return The value currently in the entry as a double.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws NumberFormatException    If the value of the entry cannot
+     *                                  be converted to a double.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry is not a
+     *                                  line.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @deprecated Use getDoubleValue(String name) instead.
      */
     public double doubleValue(String name)
             throws IllegalArgumentException, NoSuchElementException,
@@ -724,17 +789,19 @@ public class Query extends JPanel {
         return getDoubleValue(name);
     }
 
-    /** Get the current value in the entry with the given name
-     *  and return as a boolean.  If the entry is not a checkbox,
-     *  then throw an exception.
-     *  @param name The name of the entry.
-     *  @return The state of the checkbox.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry is not a
-     *   checkbox.  This is a runtime exception, so it
-     *   need not be declared explicitly.
+    /**
+     * Get the current value in the entry with the given name
+     * and return as a boolean.  If the entry is not a checkbox,
+     * then throw an exception.
+     *
+     * @param name The name of the entry.
+     * @return The state of the checkbox.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry is not a
+     *                                  checkbox.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
      */
     public boolean getBooleanValue(String name)
             throws NoSuchElementException, IllegalArgumentException {
@@ -754,20 +821,22 @@ public class Query extends JPanel {
         }
     }
 
-    /** Get the current value in the entry with the given name
-     *  and return as an array of characters.
-     *  <p>If the entry is a password field, then it is recommended for
-     *  strong security that each element of the array be set to 0
-     *  after use.
-     *  @param name The name of the entry.
-     *  @return The state of the entry
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry type does not
-     *   have a string representation (this should not be thrown).
-     *   This is a runtime exception, so it need not be declared explicitly.
-     *  @since Ptolemy II 3.1
+    /**
+     * Get the current value in the entry with the given name
+     * and return as an array of characters.
+     * <p>If the entry is a password field, then it is recommended for
+     * strong security that each element of the array be set to 0
+     * after use.
+     *
+     * @param name The name of the entry.
+     * @return The state of the entry
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry type does not
+     *                                  have a string representation (this should not be thrown).
+     *                                  This is a runtime exception, so it need not be declared explicitly.
+     * @since Ptolemy II 3.1
      */
     public char[] getCharArrayValue(String name)
             throws NoSuchElementException, IllegalArgumentException {
@@ -786,21 +855,23 @@ public class Query extends JPanel {
         }
     }
 
-    /** Get the current value in the entry with the given name
-     *  and return as a double value.  If the entry is not a line,
-     *  then throw an exception.  If the value of the entry is not
-     *  a double, then throw an exception.
-     *  @param name The name of the entry.
-     *  @return The value currently in the entry as a double.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception NumberFormatException If the value of the entry cannot
-     *   be converted to a double.  This is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry is not a
-     *   line.  This is a runtime exception, so it
-     *   need not be declared explicitly.
+    /**
+     * Get the current value in the entry with the given name
+     * and return as a double value.  If the entry is not a line,
+     * then throw an exception.  If the value of the entry is not
+     * a double, then throw an exception.
+     *
+     * @param name The name of the entry.
+     * @return The value currently in the entry as a double.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws NumberFormatException    If the value of the entry cannot
+     *                                  be converted to a double.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry is not a
+     *                                  line.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
      */
     public double getDoubleValue(String name)
             throws IllegalArgumentException, NoSuchElementException,
@@ -828,22 +899,24 @@ public class Query extends JPanel {
         }
     }
 
-    /** Get the current value in the entry with the given name
-     *  and return as an integer.  If the entry is not a line,
-     *  choice, or slider, then throw an exception.
-     *  If it is a choice or radio button, then return the
-     *  index of the first selected item.
-     *  @param name The name of the entry.
-     *  @return The value currently in the entry as an integer.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception NumberFormatException If the value of the entry cannot
-     *   be converted to an integer.  This is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry is not a
-     *   choice, line, or slider.  This is a runtime exception, so it
-     *   need not be declared explicitly.
+    /**
+     * Get the current value in the entry with the given name
+     * and return as an integer.  If the entry is not a line,
+     * choice, or slider, then throw an exception.
+     * If it is a choice or radio button, then return the
+     * index of the first selected item.
+     *
+     * @param name The name of the entry.
+     * @return The value currently in the entry as an integer.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws NumberFormatException    If the value of the entry cannot
+     *                                  be converted to an integer.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry is not a
+     *                                  choice, line, or slider.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
      */
     public int getIntValue(String name)
             throws IllegalArgumentException, NoSuchElementException,
@@ -888,11 +961,12 @@ public class Query extends JPanel {
         }
     }
 
-    /** Return the preferred height, but set the width to the maximum
-     *  possible value.  Currently (JDK 1.3), only BoxLayout pays any
-     *  attention to getMaximumSize().
+    /**
+     * Return the preferred height, but set the width to the maximum
+     * possible value.  Currently (JDK 1.3), only BoxLayout pays any
+     * attention to getMaximumSize().
      *
-     *  @return The maximum desired size.
+     * @return The maximum desired size.
      */
     public Dimension getMaximumSize() {
         // Unfortunately, if we don't have a message, then we end up with
@@ -906,19 +980,24 @@ public class Query extends JPanel {
         return preferred;
     }
 
-    /** Get the current value in the entry with the given name,
-     *  and return as a String.  All entry types support this.
-     *  Note that this method should be called from the event dispatch
-     *  thread, since it needs to query to UI widgets for their current
-     *  values.  If it is called from another thread, there is no
-     *  assurance that the value returned will be the current value.
-     *  @param name The name of the entry.
-     *  @return The value currently in the entry as a String.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry type does not
-     *   have a string representation (this should not be thrown).
+    ///////////////////////////////////////////////////////////////////
+    ////                         public variables                  ////
+
+    /**
+     * Get the current value in the entry with the given name,
+     * and return as a String.  All entry types support this.
+     * Note that this method should be called from the event dispatch
+     * thread, since it needs to query to UI widgets for their current
+     * values.  If it is called from another thread, there is no
+     * assurance that the value returned will be the current value.
+     *
+     * @param name The name of the entry.
+     * @return The value currently in the entry as a String.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry type does not
+     *                                  have a string representation (this should not be thrown).
      */
     public String getStringValue(String name)
             throws NoSuchElementException, IllegalArgumentException {
@@ -981,44 +1060,81 @@ public class Query extends JPanel {
         }
     }
 
-    /** Get the preferred number of lines to be used for entry boxes created
-     *  in using addTextArea().  The preferred height is set using
-     *  setTextHeight().
-     *  @return The preferred height in lines.
-     *  @see #addTextArea(String, String, String)
-     *  @see #setTextHeight(int)
+    /**
+     * Get the preferred number of lines to be used for entry boxes created
+     * in using addTextArea().  The preferred height is set using
+     * setTextHeight().
+     *
+     * @return The preferred height in lines.
+     * @see #addTextArea(String, String, String)
+     * @see #setTextHeight(int)
      */
     public int getTextHeight() {
         return _height;
     }
 
-    /** Get the preferred width in characters to be used for entry
-     *  boxes created in using addLine().  The preferred width is set
-     *  using setTextWidth().
-     *  @return The preferred width of an entry box in characters.
-     *  @see #setTextWidth(int)
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected methods                 ////
+
+    /**
+     * Specify the preferred height to be used for entry boxes created
+     * in using addTextArea().  If this is called multiple times, then
+     * it only affects subsequent calls.
+     *
+     * @param characters The preferred height.
+     * @see #addTextArea(String, String, String)
+     * @see #getTextHeight()
+     */
+    public void setTextHeight(int characters) {
+        _height = characters;
+    }
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected variables               ////
+
+    /**
+     * Get the preferred width in characters to be used for entry
+     * boxes created in using addLine().  The preferred width is set
+     * using setTextWidth().
+     *
+     * @return The preferred width of an entry box in characters.
+     * @see #setTextWidth(int)
      */
     public int getTextWidth() {
         return _width;
     }
 
-    /** Get the current value in the entry with the given name
-     *  and return as an integer.  If the entry is not a line,
-     *  choice, or slider, then throw an exception.
-     *  If it is a choice or radio button, then return the
-     *  index of the first selected item.
-     *  @param name The name of the entry.
-     *  @deprecated Use getIntValue(String name) instead.
-     *  @return The value currently in the entry as an integer.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception NumberFormatException If the value of the entry cannot
-     *   be converted to an integer.  This is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry is not a
-     *   choice, line, or slider.  This is a runtime exception, so it
-     *   need not be declared explicitly.
+    /**
+     * Specify the preferred width to be used for entry boxes created
+     * in using addLine().  If this is called multiple times, then
+     * it only affects subsequent calls.
+     *
+     * @param characters The preferred width.
+     * @see #getTextWidth()
+     */
+    public void setTextWidth(int characters) {
+        _width = characters;
+    }
+
+    /**
+     * Get the current value in the entry with the given name
+     * and return as an integer.  If the entry is not a line,
+     * choice, or slider, then throw an exception.
+     * If it is a choice or radio button, then return the
+     * index of the first selected item.
+     *
+     * @param name The name of the entry.
+     * @return The value currently in the entry as an integer.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws NumberFormatException    If the value of the entry cannot
+     *                                  be converted to an integer.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry is not a
+     *                                  choice, line, or slider.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @deprecated Use getIntValue(String name) instead.
      */
     public int intValue(String name)
             throws IllegalArgumentException, NoSuchElementException,
@@ -1026,8 +1142,9 @@ public class Query extends JPanel {
         return getIntValue(name);
     }
 
-    /** Notify listeners of the current value of all entries, unless
-     *  those entries have not changed since the last notification.
+    /**
+     * Notify listeners of the current value of all entries, unless
+     * those entries have not changed since the last notification.
      */
     public void notifyListeners() {
         Iterator names = _entries.keySet().iterator();
@@ -1038,10 +1155,15 @@ public class Query extends JPanel {
         }
     }
 
-    /** Remove a listener.  If the listener has not been added, then
-     *  do nothing.
-     *  @param listener The listener to remove.
-     *  @see #addQueryListener(QueryListener)
+    ///////////////////////////////////////////////////////////////////
+    ////                         friendly methods                  ////
+
+    /**
+     * Remove a listener.  If the listener has not been added, then
+     * do nothing.
+     *
+     * @param listener The listener to remove.
+     * @see #addQueryListener(QueryListener)
      */
     public void removeQueryListener(QueryListener listener) {
         if (_listeners == null) {
@@ -1051,18 +1173,20 @@ public class Query extends JPanel {
         _listeners.remove(listener);
     }
 
-    /** Set the value in the entry with the given name.
-     *  The second argument must be a string that can be parsed to the
-     *  proper type for the given entry, or an exception is thrown.
-     *  Note that this does NOT trigger the notification of listeners, and
-     *  intended to allow a way to set the query to reflect the current state.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param value The value to set the entry to.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the value does not parse
-     *   to the appropriate type.
+    /**
+     * Set the value in the entry with the given name.
+     * The second argument must be a string that can be parsed to the
+     * proper type for the given entry, or an exception is thrown.
+     * Note that this does NOT trigger the notification of listeners, and
+     * intended to allow a way to set the query to reflect the current state.
+     *
+     * @param name  The name used to identify the entry (when calling get).
+     * @param value The value to set the entry to.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the value does not parse
+     *                                  to the appropriate type.
      */
     public void set(String name, String value)
             throws NoSuchElementException, IllegalArgumentException {
@@ -1126,16 +1250,18 @@ public class Query extends JPanel {
         _previous.put(name, value);
     }
 
-    /** Set the value in the entry with the given name and notify listeners.
-     *  The second argument must be a string that can be parsed to the
-     *  proper type for the given entry, or an exception is thrown.
-     *  @param name The name used to identify the entry (when calling get).
-     *  @param value The value to set the entry to.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the value does not parse
-     *   to the appropriate type.
+    /**
+     * Set the value in the entry with the given name and notify listeners.
+     * The second argument must be a string that can be parsed to the
+     * proper type for the given entry, or an exception is thrown.
+     *
+     * @param name  The name used to identify the entry (when calling get).
+     * @param value The value to set the entry to.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the value does not parse
+     *                                  to the appropriate type.
      */
     public void setAndNotify(String name, String value)
             throws NoSuchElementException, IllegalArgumentException {
@@ -1143,8 +1269,10 @@ public class Query extends JPanel {
         _notifyListeners(name);
     }
 
-    /** Set the background color for all the widgets.
-     *  @param color The background color.
+    /**
+     * Set the background color for all the widgets.
+     *
+     * @param color The background color.
      */
     public void setBackground(Color color) {
         super.setBackground(color);
@@ -1160,17 +1288,19 @@ public class Query extends JPanel {
         }
     }
 
-    /** Set the current value in the entry with the given name.
-     *  If the entry is not a checkbox, then throw an exception.
-     *  Notify listeners that the value has changed.
-     *  @param name The name of the entry.
-     *  @param value  The new value of the entry.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry is not a
-     *   checkbox.  This is a runtime exception, so it
-     *   need not be declared explicitly.
+    /**
+     * Set the current value in the entry with the given name.
+     * If the entry is not a checkbox, then throw an exception.
+     * Notify listeners that the value has changed.
+     *
+     * @param name  The name of the entry.
+     * @param value The new value of the entry.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry is not a
+     *                                  checkbox.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
      */
     public void setBoolean(String name, boolean value)
             throws NoSuchElementException, IllegalArgumentException {
@@ -1193,34 +1323,38 @@ public class Query extends JPanel {
         _notifyListeners(name);
     }
 
-    /** Specify the number of columns to use.
-     *  The default is one.  If an integer larger than one is specified
-     *  here, then the queries will be arranged using the specified number
-     *  of columns.  As queries are added, they are put in the first row
-     *  until that row is full.  Then they are put in the second row, etc.
-     *  @param columns The number of columns.
+    /**
+     * Specify the number of columns to use.
+     * The default is one.  If an integer larger than one is specified
+     * here, then the queries will be arranged using the specified number
+     * of columns.  As queries are added, they are put in the first row
+     * until that row is full.  Then they are put in the second row, etc.
+     *
+     * @param columns The number of columns.
      */
     public void setColumns(int columns) {
         if (columns <= 0) {
             throw new IllegalArgumentException(
                     "Query.setColumns() requires a strictly positive "
-                    + "argument.");
+                            + "argument.");
         }
 
         _columns = columns;
     }
 
-    /** Set the displayed text of an entry that has been added using
-     *  addDisplay.
-     *  Notify listeners that the value has changed.
-     *  @param name The name of the entry.
-     *  @param value The string to display.
-     *  @exception NoSuchElementException If there is no entry with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry is not a
-     *   display.  This is a runtime exception, so it
-     *   need not be declared explicitly.
+    /**
+     * Set the displayed text of an entry that has been added using
+     * addDisplay.
+     * Notify listeners that the value has changed.
+     *
+     * @param name  The name of the entry.
+     * @param value The string to display.
+     * @throws NoSuchElementException   If there is no entry with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry is not a
+     *                                  display.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
      */
     public void setDisplay(String name, String value)
             throws NoSuchElementException, IllegalArgumentException {
@@ -1243,11 +1377,13 @@ public class Query extends JPanel {
         _notifyListeners(name);
     }
 
-    /** For line, display, check box, slider, radio button, or choice
-     *  entries made, if the second argument is false, then it will
-     *  be disabled.
-     *  @param name The name of the entry.
-     *  @param value If false, disables the entry.
+    /**
+     * For line, display, check box, slider, radio button, or choice
+     * entries made, if the second argument is false, then it will
+     * be disabled.
+     *
+     * @param name  The name of the entry.
+     * @param value If false, disables the entry.
      */
     public void setEnabled(String name, boolean value) {
         Object result = _entries.get(name);
@@ -1268,16 +1404,18 @@ public class Query extends JPanel {
         }
     }
 
-    /** Set the displayed text of an item that has been added using
-     *  addLine. Notify listeners that the value has changed.
-     *  @param name The name of the entry.
-     *  @param value The string to display.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry is not a
-     *   display.  This is a runtime exception, so it
-     *   need not be declared explicitly.
+    /**
+     * Set the displayed text of an item that has been added using
+     * addLine. Notify listeners that the value has changed.
+     *
+     * @param name  The name of the entry.
+     * @param value The string to display.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry is not a
+     *                                  display.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
      */
     public void setLine(String name, String value) {
         Object result = _entries.get(name);
@@ -1299,8 +1437,10 @@ public class Query extends JPanel {
         _notifyListeners(name);
     }
 
-    /** Specify a message to be displayed above the query.
-     *  @param message The message to display.
+    /**
+     * Specify a message to be displayed above the query.
+     *
+     * @param message The message to display.
      */
     public void setMessage(String message) {
         if (!_messageScrollPaneAdded) {
@@ -1329,16 +1469,18 @@ public class Query extends JPanel {
         validate();
     }
 
-    /** Set the position of an item that has been added using
-     *  addSlider.  Notify listeners that the value has changed.
-     *  @param name The name of the entry.
-     *  @param value The value to set the slider position.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry is not a
-     *   slider.  This is a runtime exception, so it
-     *   need not be declared explicitly.
+    /**
+     * Set the position of an item that has been added using
+     * addSlider.  Notify listeners that the value has changed.
+     *
+     * @param name  The name of the entry.
+     * @param value The value to set the slider position.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry is not a
+     *                                  slider.  This is a runtime exception, so it
+     *                                  need not be declared explicitly.
      */
     public void setSlider(String name, int value) {
         Object result = _entries.get(name);
@@ -1362,30 +1504,11 @@ public class Query extends JPanel {
         _notifyListeners(name);
     }
 
-    /** Specify the preferred height to be used for entry boxes created
-     *  in using addTextArea().  If this is called multiple times, then
-     *  it only affects subsequent calls.
-     *  @param characters The preferred height.
-     *  @see #addTextArea(String, String, String)
-     *  @see #getTextHeight()
-     */
-    public void setTextHeight(int characters) {
-        _height = characters;
-    }
-
-    /** Specify the preferred width to be used for entry boxes created
-     *  in using addLine().  If this is called multiple times, then
-     *  it only affects subsequent calls.
-     *  @param characters The preferred width.
-     *  @see #getTextWidth()
-     */
-    public void setTextWidth(int characters) {
-        _width = characters;
-    }
-
-    /** Specify a tool tip to appear when the mouse lingers over the label.
-     *  @param name The name of the entry.
-     *  @param tip The text of the tool tip.
+    /**
+     * Specify a tool tip to appear when the mouse lingers over the label.
+     *
+     * @param name The name of the entry.
+     * @param tip  The text of the tool tip.
      */
     public void setToolTip(String name, String tip) {
         JLabel label = (JLabel) _labels.get(name);
@@ -1395,46 +1518,38 @@ public class Query extends JPanel {
         }
     }
 
-    /** Get the current value in the entry with the given name,
-     *  and return as a String.  All entry types support this.
-     *  Note that this method should be called from the event dispatch
-     *  thread, since it needs to query to UI widgets for their current
-     *  values.  If it is called from another thread, there is no
-     *  assurance that the value returned will be the current value.
-     *  @param name The name of the entry.
-     *  @deprecated Use getStringValue(String name) instead.
-     *  @return The value currently in the entry as a String.
-     *  @exception NoSuchElementException If there is no item with the
-     *   specified name.  Note that this is a runtime exception, so it
-     *   need not be declared explicitly.
-     *  @exception IllegalArgumentException If the entry type does not
-     *   have a string representation (this should not be thrown).
+    /**
+     * Get the current value in the entry with the given name,
+     * and return as a String.  All entry types support this.
+     * Note that this method should be called from the event dispatch
+     * thread, since it needs to query to UI widgets for their current
+     * values.  If it is called from another thread, there is no
+     * assurance that the value returned will be the current value.
+     *
+     * @param name The name of the entry.
+     * @return The value currently in the entry as a String.
+     * @throws NoSuchElementException   If there is no item with the
+     *                                  specified name.  Note that this is a runtime exception, so it
+     *                                  need not be declared explicitly.
+     * @throws IllegalArgumentException If the entry type does not
+     *                                  have a string representation (this should not be thrown).
+     * @deprecated Use getStringValue(String name) instead.
      */
     public String stringValue(String name)
             throws NoSuchElementException, IllegalArgumentException {
         return getStringValue(name);
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         public variables                  ////
-
-    /** The default height of entries created with addText(). */
-    public static final int DEFAULT_ENTRY_HEIGHT = 10;
-
-    /** The default width of entries created with addLine(). */
-    public static final int DEFAULT_ENTRY_WIDTH = 30;
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected methods                 ////
-
-    /** Add a label and a widget to the panel.
-     *  @param name The name of the entry.
-     *  @param label The label.
-     *  @param widget The interactive entry to the right of the label.
-     *  @param entry The object that contains user data.
+    /**
+     * Add a label and a widget to the panel.
+     *
+     * @param name   The name of the entry.
+     * @param label  The label.
+     * @param widget The interactive entry to the right of the label.
+     * @param entry  The object that contains user data.
      */
     protected void _addPair(String name, JLabel label, Component widget,
-            Object entry) {
+                            Object entry) {
         // Surely there is a better layout manager in swing...
         // Note that Box and BoxLayout do not work because they do not
         // support gridded layout.
@@ -1483,33 +1598,14 @@ public class Query extends JPanel {
         _entryPanel.revalidate();
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected variables               ////
-
-    /** The background color as set by setBackground().
-     *  This defaults to null, which indicates that the background
-     *  is the same as the container.
-     */
-    protected Color _background = null;
-
-    /** Standard constraints for use with _grid. */
-    protected GridBagConstraints _constraints;
-
-    /** Layout control. */
-    protected GridBagLayout _grid;
-
-    /** List of registered listeners. */
-    protected Vector _listeners;
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         friendly methods                  ////
-
-    /** Notify all registered listeners that something changed for the
-     *  specified entry, if it indeed has changed.  The getStringValue()
-     *  method is used to check the current value against the previously
-     *  notified value, or the original value if there have been no
-     *  notifications.
-     *  @param name The entry that may have changed.
+    /**
+     * Notify all registered listeners that something changed for the
+     * specified entry, if it indeed has changed.  The getStringValue()
+     * method is used to check the current value against the previously
+     * notified value, or the original value if there have been no
+     * notifications.
+     *
+     * @param name The entry that may have changed.
      */
     void _notifyListeners(String name) {
         if (_listeners != null) {
@@ -1538,72 +1634,34 @@ public class Query extends JPanel {
     }
 
     ///////////////////////////////////////////////////////////////////
-    ////                         private variables                 ////
-    // The number of columns.
-    private int _columns = 1;
-
-    // The hashtable of items in the query.
-    private Map _entries = new HashMap();
-
-    // A panel within which the entries are placed.
-    private JPanel _entryPanel = new JPanel();
-
-    // A scroll pane that contains the _entryPanel.
-    private JScrollPane _entryScrollPane;
-
-    // The number of lines in a text box.
-    private int _height = DEFAULT_ENTRY_HEIGHT;
-
-    // The hashtable of labels in the query.
-    private Map _labels = new HashMap();
-
-    // Left padding insets.
-    private Insets _leftPadding = new Insets(0, 10, 0, 0);
-
-    // Area for messages.
-    private JTextArea _messageArea = null;
-
-    // A scroll pane that contains the _messageArea.
-    private JScrollPane _messageScrollPane;
-
-    // True if we have added the _messageScrollPane
-    private boolean _messageScrollPaneAdded = false;
-
-    // No padding insets.
-    private Insets _noPadding = new Insets(0, 0, 0, 0);
-
-    // The hashtable of previous values, indexed by entry name.
-    private Map _previous = new HashMap();
-
-    // The sum of the height of the widgets added using _addPair
-    // If you adjust this, try the GR/Pendulum demo, which has
-    // only one parameter.
-    private int _widgetsHeight = 20;
-
-    // The number of horizontal characters in a text box.
-    private int _width = DEFAULT_ENTRY_WIDTH;
-
-    ///////////////////////////////////////////////////////////////////
     ////                         inner classes                     ////
 
-    /** Listener for "line" and radio button entries.
+    /**
+     * Listener for "line" and radio button entries.
      */
     class QueryActionListener implements ActionListener {
+        private String _name;
+
         public QueryActionListener(String name) {
             _name = name;
         }
 
-        /** Call all registered QueryListeners. */
+        /**
+         * Call all registered QueryListeners.
+         */
         public void actionPerformed(ActionEvent e) {
             _notifyListeners(_name);
         }
-
-        private String _name;
     }
 
-    /** Panel containing an entry box and color chooser.
+    /**
+     * Panel containing an entry box and color chooser.
      */
     class QueryColorChooser extends Box implements ActionListener {
+        private JTextField _entryBox;
+        private String _name;
+        private String _defaultColor;
+
         public QueryColorChooser(String name, String defaultColor) {
             super(BoxLayout.X_AXIS);
             _defaultColor = defaultColor;
@@ -1720,25 +1778,29 @@ public class Query extends JPanel {
         public void setColor(String name) {
             _entryBox.setText(name);
         }
-
-        private JTextField _entryBox;
-        private String _name;
-        private String _defaultColor;
     }
 
-    /** Panel containing an entry box and file chooser.
+    /**
+     * Panel containing an entry box and file chooser.
      */
     class QueryFileChooser extends Box implements ActionListener {
+        private URI _base;
+        private JTextField _entryBox;
+        private String _name;
+        private File _startingDirectory;
+        private boolean _allowFiles;
+        private boolean _allowDirectories;
+
         public QueryFileChooser(String name, String defaultName, URI base,
-                File startingDirectory, boolean allowFiles,
-                boolean allowDirectories) {
+                                File startingDirectory, boolean allowFiles,
+                                boolean allowDirectories) {
             this(name, defaultName, base, startingDirectory, allowFiles,
                     allowDirectories, Color.white, Color.black);
         }
 
         public QueryFileChooser(String name, String defaultName, URI base,
-                File startingDirectory, boolean allowFiles,
-                boolean allowDirectories, Color background, Color foreground) {
+                                File startingDirectory, boolean allowFiles,
+                                boolean allowDirectories, Color background, Color foreground) {
             super(BoxLayout.X_AXIS);
             _base = base;
             _startingDirectory = startingDirectory;
@@ -1851,18 +1913,14 @@ public class Query extends JPanel {
         public void setFileName(String name) {
             _entryBox.setText(name);
         }
-
-        private URI _base;
-        private JTextField _entryBox;
-        private String _name;
-        private File _startingDirectory;
-        private boolean _allowFiles;
-        private boolean _allowDirectories;
     }
 
-    /** Listener for line entries, for when they lose the focus.
+    /**
+     * Listener for line entries, for when they lose the focus.
      */
     class QueryFocusListener implements FocusListener {
+        private String _name;
+
         public QueryFocusListener(String name) {
             _name = name;
         }
@@ -1881,26 +1939,29 @@ public class Query extends JPanel {
             // This could be a problem for some users of this class.
             _notifyListeners(_name);
         }
-
-        private String _name;
     }
 
-    /** Listener for "CheckBox" and "Choice" entries.
+    /**
+     * Listener for "CheckBox" and "Choice" entries.
      */
     class QueryItemListener implements ItemListener {
+        private String _name;
+
         public QueryItemListener(String name) {
             _name = name;
         }
 
-        /** Call all registered QueryListeners. */
+        /**
+         * Call all registered QueryListeners.
+         */
         public void itemStateChanged(ItemEvent e) {
             _notifyListeners(_name);
         }
-
-        private String _name;
     }
 
-    /** Inner class to tie textArea to scroll pane */
+    /**
+     * Inner class to tie textArea to scroll pane
+     */
     class QueryScrollPane extends JScrollPane {
         public JTextArea textArea;
 
@@ -1919,18 +1980,21 @@ public class Query extends JPanel {
         }
     }
 
-    /** Listener for changes in slider.
+    /**
+     * Listener for changes in slider.
      */
     class SliderListener implements ChangeListener {
+        private String _name;
+
         public SliderListener(String name) {
             _name = name;
         }
 
-        /** Call all registered QueryListeners. */
+        /**
+         * Call all registered QueryListeners.
+         */
         public void stateChanged(ChangeEvent event) {
             _notifyListeners(_name);
         }
-
-        private String _name;
     }
 }

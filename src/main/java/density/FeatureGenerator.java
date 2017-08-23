@@ -23,15 +23,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package density;
 
-import java.io.*;
+import java.io.PrintWriter;
 
 interface FeatureGenerator {
     void setSampleExpectations(FeaturedSpace X);
+
     void updateFeatureExpectations(FeaturedSpace X);
+
     int getFirstIndex();
+
     int getLastIndex();
+
     Feature exportFeature(int index);
+
     Feature getFeature(int index);
+
     Feature toFeature(int index);
+
     void outputDescription(PrintWriter out);
 }

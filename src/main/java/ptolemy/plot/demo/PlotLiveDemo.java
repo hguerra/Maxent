@@ -27,31 +27,38 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot.demo;
 
+import ptolemy.plot.PlotLive;
+
+import javax.swing.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
-
-import ptolemy.plot.PlotLive;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// PlotLiveDemo
 
 /**
-   Dynamically plot a test signal, illustrating how to use the
-   PlotLive class.
-
-   @author Edward A. Lee
-   @version $Id: PlotLiveDemo.java,v 1.66 2005/04/29 20:03:27 cxh Exp $
-   @since Ptolemy II 0.2
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-*/
+ * Dynamically plot a test signal, illustrating how to use the
+ * PlotLive class.
+ *
+ * @author Edward A. Lee
+ * @version $Id: PlotLiveDemo.java,v 1.66 2005/04/29 20:03:27 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @since Ptolemy II 0.2
+ */
 public class PlotLiveDemo extends PlotLive {
-    /** Construct a plot for live, animated signal display.
-     *  Configure the title, axes, points style, and persistence.
+    /**
+     * @serial Value being plotted
+     */
+    private double _count = 0.0;
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         public methods                    ////
+
+    /**
+     * Construct a plot for live, animated signal display.
+     * Configure the title, axes, points style, and persistence.
      */
     public PlotLiveDemo() {
         setYRange(-1, 1);
@@ -60,11 +67,51 @@ public class PlotLiveDemo extends PlotLive {
         setMarksStyle("dots");
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         public methods                    ////
+    /**
+     * Run the demo as an application.
+     * This is very useful for debugging.  The command to run would be
+     * java -classpath $PTII ptolemy.plot.demo.PlotLiveDemo
+     */
+    public static void main(String[] args) {
+        // Run this in the Swing Event Thread.
+        Runnable doActions = new Runnable() {
+            public void run() {
+                try {
+                    final PlotLiveDemo plotLiveDemo = new PlotLiveDemo();
 
-    /** Add points to the plot.  This is called by the base class
-     *  run() method when the plot is live.
+                    JFrame frame = new JFrame("PlotLiveDemo");
+                    frame.addWindowListener(new WindowAdapter() {
+                        public void windowClosing(WindowEvent event) {
+                            plotLiveDemo.stop();
+                            System.exit(0);
+                        }
+                    });
+                    frame.getContentPane().add("Center", plotLiveDemo);
+                    frame.show();
+                    plotLiveDemo.setButtons(true);
+                    plotLiveDemo.start();
+                    frame.pack();
+                } catch (Exception ex) {
+                    System.err.println(ex.toString());
+                    ex.printStackTrace();
+                }
+            }
+        };
+
+        try {
+            SwingUtilities.invokeAndWait(doActions);
+        } catch (Exception ex) {
+            System.err.println(ex.toString());
+            ex.printStackTrace();
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         private variables                 ////
+
+    /**
+     * Add points to the plot.  This is called by the base class
+     * run() method when the plot is live.
      */
     public synchronized void addPoints() {
         // You could plot multiple points at a time here
@@ -87,48 +134,4 @@ public class PlotLiveDemo extends PlotLive {
         } catch (InterruptedException e) {
         }
     }
-
-    /** Run the demo as an application.
-     *        This is very useful for debugging.  The command to run would be
-     * java -classpath $PTII ptolemy.plot.demo.PlotLiveDemo
-     */
-    public static void main(String[] args) {
-        // Run this in the Swing Event Thread.
-        Runnable doActions = new Runnable() {
-                public void run() {
-                    try {
-                        final PlotLiveDemo plotLiveDemo = new PlotLiveDemo();
-
-                        JFrame frame = new JFrame("PlotLiveDemo");
-                        frame.addWindowListener(new WindowAdapter() {
-                                public void windowClosing(WindowEvent event) {
-                                    plotLiveDemo.stop();
-                                    System.exit(0);
-                                }
-                            });
-                        frame.getContentPane().add("Center", plotLiveDemo);
-                        frame.show();
-                        plotLiveDemo.setButtons(true);
-                        plotLiveDemo.start();
-                        frame.pack();
-                    } catch (Exception ex) {
-                        System.err.println(ex.toString());
-                        ex.printStackTrace();
-                    }
-                }
-            };
-
-        try {
-            SwingUtilities.invokeAndWait(doActions);
-        } catch (Exception ex) {
-            System.err.println(ex.toString());
-            ex.printStackTrace();
-        }
-    }
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         private variables                 ////
-
-    /** @serial Value being plotted */
-    private double _count = 0.0;
 }

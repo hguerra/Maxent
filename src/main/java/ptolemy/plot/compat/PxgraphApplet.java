@@ -31,76 +31,87 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot.compat;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-
 import ptolemy.plot.CmdLineArgException;
 import ptolemy.plot.Plot;
 import ptolemy.plot.PlotApplet;
 import ptolemy.plot.PlotBox;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// PxgraphApplet
 
 /**
-   An Applet that can plot data in pxgraph format from a URL.
-   The URL should be specified using the dataurl applet parameter
-   or as part of the <i>pxgraphargs</i> applet parameter.
-   That parameter contains command-line style arguments compatible with
-   the older pxgraph program.
-   See the documentation for the PxgraphParser class for the format of
-   these arguments.
-
-   @author Edward A. Lee
-   @version $Id: PxgraphApplet.java,v 1.30 2005/04/29 20:04:35 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-   @see PxgraphParser
-   @see ptolemy.plot.PlotBox
-   @see ptolemy.plot.Plot
-*/
+ * An Applet that can plot data in pxgraph format from a URL.
+ * The URL should be specified using the dataurl applet parameter
+ * or as part of the <i>pxgraphargs</i> applet parameter.
+ * That parameter contains command-line style arguments compatible with
+ * the older pxgraph program.
+ * See the documentation for the PxgraphParser class for the format of
+ * these arguments.
+ *
+ * @author Edward A. Lee
+ * @version $Id: PxgraphApplet.java,v 1.30 2005/04/29 20:04:35 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @see PxgraphParser
+ * @see ptolemy.plot.PlotBox
+ * @see ptolemy.plot.Plot
+ * @since Ptolemy II 0.4
+ */
 public class PxgraphApplet extends PlotApplet {
-    /** Return a string describing this applet.
+    ///////////////////////////////////////////////////////////////////
+    ////                         private members                   ////
+    // Parser.
+    private PxgraphParser _parser;
+
+    /**
+     * Return a string describing this applet.
      */
     public String getAppletInfo() {
         return "PxgraphApplet " + PlotBox.PTPLOT_RELEASE
-            + ": A data plotter.\n" + "By: Edward A. Lee and\n "
-            + "Christopher Hylands\n"
-            + "($Id: PxgraphApplet.java,v 1.30 2005/04/29 20:04:35 cxh Exp $)";
+                + ": A data plotter.\n" + "By: Edward A. Lee and\n "
+                + "Christopher Hylands\n"
+                + "($Id: PxgraphApplet.java,v 1.30 2005/04/29 20:04:35 cxh Exp $)";
     }
 
-    /** Return information about parameters.
+    /**
+     * Return information about parameters.
      */
     public String[][] getParameterInfo() {
         String[][] pinfo = {
-            {
-                "background",
-                "hexcolor value",
-                "background color"
-            },
-            {
-                "foreground",
-                "hexcolor value",
-                "foreground color"
-            },
-            {
-                "dataurl",
-                "url",
-                "the URL of the data to plot"
-            },
-            {
-                "pxgraphargs",
-                "args",
-                "pxgraph style command line arguments"
-            }
+                {
+                        "background",
+                        "hexcolor value",
+                        "background color"
+                },
+                {
+                        "foreground",
+                        "hexcolor value",
+                        "foreground color"
+                },
+                {
+                        "dataurl",
+                        "url",
+                        "the URL of the data to plot"
+                },
+                {
+                        "pxgraphargs",
+                        "args",
+                        "pxgraph style command line arguments"
+                }
         };
         return pinfo;
     }
 
-    /** Initialize the applet.  Read the applet parameters.
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected methods                 ////
+
+    /**
+     * Initialize the applet.  Read the applet parameters.
      */
     public void init() {
         if (plot() == null) {
@@ -139,19 +150,13 @@ public class PxgraphApplet extends PlotApplet {
         plot().repaint();
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected methods                 ////
-
-    /** Read the specified stream, assuming it is pxgraph formatted data.
-     *  @param in The input stream.
-     *  @exception IOException If the stream cannot be read.
+    /**
+     * Read the specified stream, assuming it is pxgraph formatted data.
+     *
+     * @param in The input stream.
+     * @throws IOException If the stream cannot be read.
      */
     protected void _read(InputStream in) throws IOException {
         _parser.read(in);
     }
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         private members                   ////
-    // Parser.
-    private PxgraphParser _parser;
 }

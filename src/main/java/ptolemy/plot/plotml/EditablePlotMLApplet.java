@@ -27,39 +27,42 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot.plotml;
 
-import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
 import ptolemy.plot.EditablePlot;
 import ptolemy.plot.Plot;
 import ptolemy.plot.PlotBox;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// EditablePlotMLApplet
 
 /**
-   This applet reads a URL giving a PlotML file for a plot and places
-   the data into an editable plot.
-
-   @see EditablePlot
-   @author Edward A. Lee
-   @version $Id: EditablePlotMLApplet.java,v 1.30 2005/04/29 20:05:04 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-*/
+ * This applet reads a URL giving a PlotML file for a plot and places
+ * the data into an editable plot.
+ *
+ * @author Edward A. Lee
+ * @version $Id: EditablePlotMLApplet.java,v 1.30 2005/04/29 20:05:04 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @see EditablePlot
+ * @since Ptolemy II 0.4
+ */
 public class EditablePlotMLApplet extends PlotMLApplet {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
 
-    /** Initialize the applet.  Place an instance of EditablePlot
-     *  and a widget for selecting the data set to edit.
+    ///////////////////////////////////////////////////////////////////
+    ////                         private variables                 ////
+    // Choice widget for selecting the editable data set.
+    private JComboBox _choice;
+
+    /**
+     * Initialize the applet.  Place an instance of EditablePlot
+     * and a widget for selecting the data set to edit.
      */
     public void init() {
         super.init();
@@ -87,25 +90,28 @@ public class EditablePlotMLApplet extends PlotMLApplet {
      */
     public String getAppletInfo() {
         return "EditablePlotDemo " + PlotBox.PTPLOT_RELEASE
-            + ": Demo of EditablePlot.\n" + "By: Edward A. Lee\n "
-            + "($Id: EditablePlotMLApplet.java,v 1.30 2005/04/29 20:05:04 cxh Exp $)";
-    }
-
-    /** Create a new Plot object for the applet.  Derived classes can
-     *  redefine this method to return a different type of plot object.
-     */
-    public PlotBox newPlot() {
-        return new EditablePlot();
+                + ": Demo of EditablePlot.\n" + "By: Edward A. Lee\n "
+                + "($Id: EditablePlotMLApplet.java,v 1.30 2005/04/29 20:05:04 cxh Exp $)";
     }
 
     ///////////////////////////////////////////////////////////////////
     ////                         protected methods                 ////
 
-    /** Given the size of the applet, set the size of the plot.
-     *  Derived classes may override this to allow room for other
-     *  widgets below the plot.
-     *  @param appletWidth The width of the applet.
-     *  @param appletHeight The height of the applet.
+    /**
+     * Create a new Plot object for the applet.  Derived classes can
+     * redefine this method to return a different type of plot object.
+     */
+    public PlotBox newPlot() {
+        return new EditablePlot();
+    }
+
+    /**
+     * Given the size of the applet, set the size of the plot.
+     * Derived classes may override this to allow room for other
+     * widgets below the plot.
+     *
+     * @param appletWidth  The width of the applet.
+     * @param appletHeight The height of the applet.
      */
     protected void _setPlotSize(int appletWidth, int appletHeight) {
         if (appletHeight > 50) {
@@ -114,11 +120,6 @@ public class EditablePlotMLApplet extends PlotMLApplet {
             plot().setSize(appletWidth, appletHeight);
         }
     }
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         private variables                 ////
-    // Choice widget for selecting the editable data set.
-    private JComboBox _choice;
 
     ///////////////////////////////////////////////////////////////////
     ////                         inner classes                     ////

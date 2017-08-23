@@ -35,15 +35,15 @@ import ptolemy.plot.PlotApplet;
 //// PlotFourierSeries
 
 /**
-   Plot a Fourier series approximation to a square wave.
-   This is a demonstration of the use of the Plot class.
-
-   @author Edward A. Lee
-   @version $Id: PlotFourierSeries.java,v 1.42 2005/04/25 22:48:54 cxh Exp $
-   @since Ptolemy II 0.2
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-*/
+ * Plot a Fourier series approximation to a square wave.
+ * This is a demonstration of the use of the Plot class.
+ *
+ * @author Edward A. Lee
+ * @version $Id: PlotFourierSeries.java,v 1.42 2005/04/25 22:48:54 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @since Ptolemy II 0.2
+ */
 public class PlotFourierSeries extends PlotApplet {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
@@ -53,8 +53,8 @@ public class PlotFourierSeries extends PlotApplet {
      */
     public String getAppletInfo() {
         return "PlotFourierSeries 1.1: Demo of PlotApplet.\n"
-            + "By: Edward A. Lee\n "
-            + "($Id: PlotFourierSeries.java,v 1.42 2005/04/25 22:48:54 cxh Exp $)";
+                + "By: Edward A. Lee\n "
+                + "($Id: PlotFourierSeries.java,v 1.42 2005/04/25 22:48:54 cxh Exp $)";
     }
 
     /**
@@ -83,7 +83,7 @@ public class PlotFourierSeries extends PlotApplet {
 
             for (int j = 1; j <= 10; j++) {
                 double sig = (4.0 * Math.sin((i * 2.0 * Math.PI * ((2 * j) - 1)) / 400.0)) / (Math.PI * ((2 * j)
-                                                                                                      - 1));
+                        - 1));
                 approximation += sig;
                 plot.addPoint(j, (double) i, approximation, !first);
             }

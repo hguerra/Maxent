@@ -1,9 +1,9 @@
 <!-- $Id: sinusoidsShow.htm,v 1.6.4.1 2005/05/04 04:42:12 cxh Exp $-->
 <HTML>
 <HEAD>
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-<link href="../../../doc/default.css" rel="stylesheet" type="text/css">
-<TITLE>Sinusoids XML File</TITLE>
+    <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+    <link href="../../../doc/default.css" rel="stylesheet" type="text/css">
+    <TITLE>Sinusoids XML File</TITLE>
 </HEAD>
 <BODY>
 
@@ -11,26 +11,28 @@
 The applet below shows the contents of
 <a href="sinusoids.xml">sinusoids.xml</a>
 <P>
-<CENTER>
+    <CENTER>
 <P>
 
 
-<!-- HTML CONVERTER -->
-<SCRIPT LANGUAGE="JavaScript"><!--
-    var _info = navigator.userAgent; 
-    var _ns = false; 
+    <!-- HTML CONVERTER -->
+    <SCRIPT LANGUAGE="JavaScript"><!--
+    var _info = navigator.userAgent;
+    var _ns = false;
     var _ns6 = false;
     var _ie = (_info.indexOf("MSIE") > 0 && _info.indexOf("Win") > 0 && _info.indexOf("Windows 3.1") < 0);
-//--></SCRIPT>
-    <COMMENT>
-        <SCRIPT LANGUAGE="JavaScript1.1"><!--
+    //--></SCRIPT>
+<COMMENT>
+    <SCRIPT LANGUAGE="JavaScript1.1"><!--
         var _ns6 = (_info.indexOf("Mozilla/5") >= 0);
         var _ns = (navigator.appName.indexOf("Netscape") >= 0 && ((_info.indexOf("Win") > 0     && _info.indexOf("Win16") < 0 && java.lang.System.getProperty("os.version").indexOf("3.5") < 0) || (_info.indexOf("Sun") > 0) || (_info.indexOf("Linux") > 0) || (_info.indexOf("AIX") > 0) || (_info.indexOf("OS/2") > 0) || (_info.indexOf("IRIX") > 0 )));
-//--></SCRIPT>
-    </COMMENT>
+//-->
+
+    </SCRIPT>
+</COMMENT>
 
 <SCRIPT LANGUAGE="JavaScript"><!--
-    if (_ie == true) document.writeln('\
+if (_ie == true) document.writeln('\
         <OBJECT \
             classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93" \
             width = "680" \
@@ -50,8 +52,8 @@ The applet below shows the contents of
 <BR> \
         </OBJECT> \
         ');
-    else if (_ns == true || _ns6 == true)
-         document.writeln('\
+else if (_ns == true || _ns6 == true)
+    document.writeln('\
         <COMMENT> \
           <EMBED \
             type = "application/x-java-applet;version=1.4.2" \
@@ -68,7 +70,7 @@ The applet below shows the contents of
            </EMBED> \
         <COMMENT> \
         ');
-    else document.writeln('\
+else document.writeln('\
         <APPLET \
              code = "ptolemy.gui.demo.ShowRawDocumentApplet" codebase = "../../.." width = "680" \
             height = "300" \

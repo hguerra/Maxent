@@ -26,37 +26,39 @@ COPYRIGHTENDKEY
 */
 package ptolemy.gui;
 
-import java.awt.Window;
+import java.awt.*;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// CloseListener
 
 /**
-   This is an interface for listeners that need to be informed when a
-   window closes.  Note that this is a very small subset of what Java's
-   WindowListener interface does.  This class is a workaround for a bug
-   in Java's AWT, where components are not informed in any way when the
-   window that contains them is closed, even though they can have
-   registered listeners.  The listeners are never called, unless the
-   component is a top-level window. A listener that implements this
-   interface, by contrast, is informed regardless of whether it is
-   at the top level. This is used, for example, by the ComponentDialog
-   class.
-   @see ComponentDialog
-
-   @author Edward A. Lee
-   @version $Id: CloseListener.java,v 1.12 2005/03/01 01:00:36 cxh Exp $
-   @since Ptolemy II 1.0
-   @Pt.ProposedRating Green (eal)
-   @Pt.AcceptedRating Green (janneck)
-*/
+ * This is an interface for listeners that need to be informed when a
+ * window closes.  Note that this is a very small subset of what Java's
+ * WindowListener interface does.  This class is a workaround for a bug
+ * in Java's AWT, where components are not informed in any way when the
+ * window that contains them is closed, even though they can have
+ * registered listeners.  The listeners are never called, unless the
+ * component is a top-level window. A listener that implements this
+ * interface, by contrast, is informed regardless of whether it is
+ * at the top level. This is used, for example, by the ComponentDialog
+ * class.
+ *
+ * @author Edward A. Lee
+ * @version $Id: CloseListener.java,v 1.12 2005/03/01 01:00:36 cxh Exp $
+ * @Pt.ProposedRating Green (eal)
+ * @Pt.AcceptedRating Green (janneck)
+ * @see ComponentDialog
+ * @since Ptolemy II 1.0
+ */
 public interface CloseListener {
-    /** Notify that the specified window has closed.  The second argument,
-     *  if non-null, gives the name of the button that was used to close
-     *  the window.
-     *  @param window The window that closed.
-     *  @param button The name of the button that was used to close the window.
+    /**
+     * Notify that the specified window has closed.  The second argument,
+     * if non-null, gives the name of the button that was used to close
+     * the window.
+     *
+     * @param window The window that closed.
+     * @param button The name of the button that was used to close the window.
      */
     public void windowClosed(Window window, String button);
 }

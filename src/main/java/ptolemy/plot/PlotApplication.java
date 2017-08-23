@@ -26,111 +26,116 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot;
 
+import javax.swing.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// PlotApplication
 
 /**
-   PlotApplication is a versatile two-dimensional data plotter application.
-   It can read files compatible with the Ptolemy plot
-   file format (currently only ASCII).  For a description of the file
-   format, see the Plot and PlotBox classes.
-   Command-line options include:
-   <dl>
-
-   <dt><code>-help</code></a>
-   <dt>Print the usage, including all command-line options
-   that exist for backward compatibility and then exit.
-   The help menu choice will display the same information.
-   <dt><code>-test</code></a>
-   <dt>Display the plot, then exit after 2 seconds.
-
-   <dt><code>-version</code></a>
-   <dt>Print the program version and then exit.
-   While ptplot is running,
-   the version menu choice will display the same information.
-   <dt><code>-</code></a>
-   <dt>Read the plot data from standard in.
-   </dl>
-
-   <p>
-   For compatibility with historical applications, this application has
-   a limited ability to read pxgraph files.  The command line arguments
-   must be used, and the options that are understood are exactly those
-   of the pxgraph application, plus some more to allow for cross-platform
-   reading.  It is not possible to read pxgraph files
-   using the "Open" menu command (because of the cross-platform problems).
-   The additional command-line arguments are:
-   <dl>
-
-   <dt><code>-bigendian</code></a>
-   <dt>Data files are in big-endian, or network binary format.
-   If you are on a little-endian machine, such as a machine
-   with an Intel x86 chip, and you would like to read a binary
-   format file created on a big-endian machine, such as a Sun SPARC,
-   use the <code>-bigendian</code> flag.
-
-   <dt><code>-littleendian</code></a>
-   <dt>Data files are in little-endian, or x86 binary format.
-   If you are on a big-endian machine, such as a Sun Sparc,
-   and you would like to read a binary
-   format file created on a little-endian machine, such as Intel x86
-   machine, then use the <code>-littleendian</code> flag.
-   </dl>
-   <p>
-   To compile and run this application, do the following:
-   <pre>
-   javac -classpath ../.. PlotApplication.java
-   java -classpath ../.. ptolemy.plot.PlotApplication
-   </pre>
-   <p>
-   This assumes a particular directory structure.  If this is not what you
-   have, then alter the above accordingly.
-
-   @see Plot
-   @see PlotBox
-   @author Christopher Hylands and Edward A. Lee
-   @version $Id: PlotApplication.java,v 1.61 2005/04/25 22:49:27 cxh Exp $
-   @since Ptolemy II 0.2
-   @Pt.ProposedRating Yellow (cxh)
-   @Pt.AcceptedRating Yellow (cxh)
-*/
+ * PlotApplication is a versatile two-dimensional data plotter application.
+ * It can read files compatible with the Ptolemy plot
+ * file format (currently only ASCII).  For a description of the file
+ * format, see the Plot and PlotBox classes.
+ * Command-line options include:
+ * <dl>
+ * <p>
+ * <dt><code>-help</code></a>
+ * <dt>Print the usage, including all command-line options
+ * that exist for backward compatibility and then exit.
+ * The help menu choice will display the same information.
+ * <dt><code>-test</code></a>
+ * <dt>Display the plot, then exit after 2 seconds.
+ * <p>
+ * <dt><code>-version</code></a>
+ * <dt>Print the program version and then exit.
+ * While ptplot is running,
+ * the version menu choice will display the same information.
+ * <dt><code>-</code></a>
+ * <dt>Read the plot data from standard in.
+ * </dl>
+ * <p>
+ * <p>
+ * For compatibility with historical applications, this application has
+ * a limited ability to read pxgraph files.  The command line arguments
+ * must be used, and the options that are understood are exactly those
+ * of the pxgraph application, plus some more to allow for cross-platform
+ * reading.  It is not possible to read pxgraph files
+ * using the "Open" menu command (because of the cross-platform problems).
+ * The additional command-line arguments are:
+ * <dl>
+ * <p>
+ * <dt><code>-bigendian</code></a>
+ * <dt>Data files are in big-endian, or network binary format.
+ * If you are on a little-endian machine, such as a machine
+ * with an Intel x86 chip, and you would like to read a binary
+ * format file created on a big-endian machine, such as a Sun SPARC,
+ * use the <code>-bigendian</code> flag.
+ * <p>
+ * <dt><code>-littleendian</code></a>
+ * <dt>Data files are in little-endian, or x86 binary format.
+ * If you are on a big-endian machine, such as a Sun Sparc,
+ * and you would like to read a binary
+ * format file created on a little-endian machine, such as Intel x86
+ * machine, then use the <code>-littleendian</code> flag.
+ * </dl>
+ * <p>
+ * To compile and run this application, do the following:
+ * <pre>
+ * javac -classpath ../.. PlotApplication.java
+ * java -classpath ../.. ptolemy.plot.PlotApplication
+ * </pre>
+ * <p>
+ * This assumes a particular directory structure.  If this is not what you
+ * have, then alter the above accordingly.
+ *
+ * @author Christopher Hylands and Edward A. Lee
+ * @version $Id: PlotApplication.java,v 1.61 2005/04/25 22:49:27 cxh Exp $
+ * @Pt.ProposedRating Yellow (cxh)
+ * @Pt.AcceptedRating Yellow (cxh)
+ * @see Plot
+ * @see PlotBox
+ * @since Ptolemy II 0.2
+ */
 public class PlotApplication extends PlotFrame {
-    /** Construct a plot with no command-line arguments.
-     *  It initially displays a sample plot.
-     *  @exception Exception Not thrown in this base class.
+    /**
+     * If true, then auto exit after a few seconds.
+     */
+    protected static boolean _test = false;
+
+    /**
+     * Construct a plot with no command-line arguments.
+     * It initially displays a sample plot.
+     *
+     * @throws Exception Not thrown in this base class.
      */
     public PlotApplication() throws Exception {
         this(new String[0]);
     }
 
-    /** Construct a plot with the specified command-line arguments.
-     *  @param args The command-line arguments.
-     *  @exception Exception If command line arguments have problems.
+    /**
+     * Construct a plot with the specified command-line arguments.
+     *
+     * @param args The command-line arguments.
+     * @throws Exception If command line arguments have problems.
      */
     public PlotApplication(String[] args) throws Exception {
         this(new Plot(), args);
     }
 
-    /** Construct a plot with the specified command-line arguments
-     *  and instance of plot.  If there are no command-line arguments,
-     *  then display a sample plot.
-     *  @param plot The instance of Plot to use.
-     *  @param args The command-line arguments.
-     *  @exception Exception If command line arguments have problems.
+    /**
+     * Construct a plot with the specified command-line arguments
+     * and instance of plot.  If there are no command-line arguments,
+     * then display a sample plot.
+     *
+     * @param plot The instance of Plot to use.
+     * @param args The command-line arguments.
+     * @throws Exception If command line arguments have problems.
      */
     public PlotApplication(PlotBox plot, String[] args)
             throws Exception {
@@ -141,13 +146,13 @@ public class PlotApplication extends PlotFrame {
 
         // Handle window closing by exiting the application.
         addWindowListener(new WindowAdapter() {
-                public void windowClosing(WindowEvent e) {
-                    // Strangely, calling _close() here sends javac into
-                    // an infinite loop (in jdk 1.1.4).
-                    //              _close();
-                    System.exit(0);
-                }
-            });
+            public void windowClosing(WindowEvent e) {
+                // Strangely, calling _close() here sends javac into
+                // an infinite loop (in jdk 1.1.4).
+                //              _close();
+                System.exit(0);
+            }
+        });
 
         _parseArgs(args);
 
@@ -158,10 +163,15 @@ public class PlotApplication extends PlotFrame {
         setVisible(true);
     }
 
-    /** Display the given plot.  Unlike the two argument constructor,
-     *  this does not take command-line arguments, and does not fill
-     *  the plot with a sample plot.
-     *  @param plot The instance of Plot to display.
+    ///////////////////////////////////////////////////////////////////
+    ////                         public methods                    ////
+
+    /**
+     * Display the given plot.  Unlike the two argument constructor,
+     * this does not take command-line arguments, and does not fill
+     * the plot with a sample plot.
+     *
+     * @param plot The instance of Plot to display.
      */
     public PlotApplication(PlotBox plot) {
         // Invoke the base class constructor and pass in the argument a Plot
@@ -171,35 +181,33 @@ public class PlotApplication extends PlotFrame {
 
         // Handle window closing by exiting the application.
         addWindowListener(new WindowAdapter() {
-                public void windowClosing(WindowEvent e) {
-                    // Strangely, calling _close() here sends javac into
-                    // an infinite loop (in jdk 1.1.4).
-                    //              _close();
-                    System.exit(0);
-                }
-            });
+            public void windowClosing(WindowEvent e) {
+                // Strangely, calling _close() here sends javac into
+                // an infinite loop (in jdk 1.1.4).
+                //              _close();
+                System.exit(0);
+            }
+        });
 
         setVisible(true);
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         public methods                    ////
-
-    /** Create a new plot window and map it to the screen.
+    /**
+     * Create a new plot window and map it to the screen.
      */
     public static void main(final String[] args) {
         try {
             // Run this in the Swing Event Thread.
             Runnable doActions = new Runnable() {
-                    public void run() {
-                        try {
-                            new PlotApplication(new Plot(), args);
-                        } catch (Exception ex) {
-                            System.err.println(ex.toString());
-                            ex.printStackTrace();
-                        }
+                public void run() {
+                    try {
+                        new PlotApplication(new Plot(), args);
+                    } catch (Exception ex) {
+                        System.err.println(ex.toString());
+                        ex.printStackTrace();
                     }
-                };
+                }
+            };
 
             SwingUtilities.invokeAndWait(doActions);
         } catch (Exception ex) {
@@ -223,38 +231,42 @@ public class PlotApplication extends PlotFrame {
     protected void _about() {
         JOptionPane.showMessageDialog(this,
                 "PlotApplication class\n" + "By: Edward A. Lee "
-                + "and Christopher Hylands\n" + "Version " + PlotBox.PTPLOT_RELEASE
-                + ", Build: $Id: PlotApplication.java,v 1.61 2005/04/25 22:49:27 cxh Exp $\n\n"
-                + "For more information, see\n"
-                + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n\n"
-                + "Copyright (c) 1997-2005, "
-                + "The Regents of the University of California.",
+                        + "and Christopher Hylands\n" + "Version " + PlotBox.PTPLOT_RELEASE
+                        + ", Build: $Id: PlotApplication.java,v 1.61 2005/04/25 22:49:27 cxh Exp $\n\n"
+                        + "For more information, see\n"
+                        + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n\n"
+                        + "Copyright (c) 1997-2005, "
+                        + "The Regents of the University of California.",
                 "About Ptolemy Plot", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** Exit the application.
+    /**
+     * Exit the application.
      */
     protected void _close() {
         System.exit(0);
     }
 
-    /** Display more detailed information than given by _about().
+    /**
+     * Display more detailed information than given by _about().
      */
     protected void _help() {
         JOptionPane.showMessageDialog(this,
                 "PlotApplication is a standalone plot " + " application.\n"
-                + "  File formats understood: Ptplot ASCII.\n"
-                + "  Left mouse button: Zooming.\n\n" + _usage(),
+                        + "  File formats understood: Ptplot ASCII.\n"
+                        + "  Left mouse button: Zooming.\n\n" + _usage(),
                 "About Ptolemy Plot", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** Parse the command-line
-     *  arguments and make calls to the Plot class accordingly.
-     *  @return The number of arguments read.
-     *  @exception CmdLineArgException If a command line argument cannot
-     *  be parsed.
-     *  @exception FileNotFoundException If an input file cannot be found.
-     *  @exception IOException If there is a problem reading an input.
+    /**
+     * Parse the command-line
+     * arguments and make calls to the Plot class accordingly.
+     *
+     * @return The number of arguments read.
+     * @throws CmdLineArgException   If a command line argument cannot
+     *                               be parsed.
+     * @throws FileNotFoundException If an input file cannot be found.
+     * @throws IOException           If there is a problem reading an input.
      */
     protected int _parseArgs(String[] args)
             throws CmdLineArgException, FileNotFoundException, IOException {
@@ -338,8 +350,13 @@ public class PlotApplication extends PlotFrame {
         return argumentsRead;
     }
 
-    /** Return a string summarizing the command-line arguments.
-     *  @return A usage string.
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected variables               ////
+
+    /**
+     * Return a string summarizing the command-line arguments.
+     *
+     * @return A usage string.
      */
     protected String _usage() {
         // We use a table here to keep things neat.
@@ -352,24 +369,24 @@ public class PlotApplication extends PlotFrame {
         // "(Unsupported)" - The string that is printed to indicate if
         //                   a option is unsupported.
         String[][] commandOptions = {
-            {
-                "-height",
-                "<pixels>"
-            },
-            {
-                "-width",
-                "<pixels>"
-            },
+                {
+                        "-height",
+                        "<pixels>"
+                },
+                {
+                        "-width",
+                        "<pixels>"
+                },
         };
 
         String[] commandFlags = {
-            "-help",
-            "-test",
-            "-version",
-            "-",
+                "-help",
+                "-test",
+                "-version",
+                "-",
         };
         String result = "Usage: ptplot [ options ] [file ...]\n\n"
-            + "Options that take values:\n";
+                + "Options that take values:\n";
 
         int i;
 
@@ -386,10 +403,4 @@ public class PlotApplication extends PlotFrame {
 
         return result;
     }
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected variables               ////
-
-    /** If true, then auto exit after a few seconds. */
-    protected static boolean _test = false;
 }

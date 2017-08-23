@@ -33,29 +33,33 @@ package ptolemy.plot;
 //// HistogramApplet
 
 /**
-   A Histogram.  Data can be given in ASCII format at a URL.
-   If none is given, then a sample histogram is generated.
-
-   @author Edward A. Lee
-   @version $Id: HistogramApplet.java,v 1.24 2005/04/25 22:49:13 cxh Exp $
-   @since Ptolemy II 0.3
-   @Pt.ProposedRating Yellow (cxh)
-   @Pt.AcceptedRating Yellow (cxh)
-*/
+ * A Histogram.  Data can be given in ASCII format at a URL.
+ * If none is given, then a sample histogram is generated.
+ *
+ * @author Edward A. Lee
+ * @version $Id: HistogramApplet.java,v 1.24 2005/04/25 22:49:13 cxh Exp $
+ * @Pt.ProposedRating Yellow (cxh)
+ * @Pt.AcceptedRating Yellow (cxh)
+ * @since Ptolemy II 0.3
+ */
 public class HistogramApplet extends PlotApplet {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
 
-    /** Return a string describing this applet.
-     *  @return A string describing the applet.
+    /**
+     * Return a string describing this applet.
+     *
+     * @return A string describing the applet.
      */
     public String getAppletInfo() {
         return "Histogram 1.0: Demo of PlotApplet.\n" + "By: Edward A. Lee\n "
-            + "($Id: HistogramApplet.java,v 1.24 2005/04/25 22:49:13 cxh Exp $)";
+                + "($Id: HistogramApplet.java,v 1.24 2005/04/25 22:49:13 cxh Exp $)";
     }
 
-    /** Create a new Histogram object for the applet.
-     *  @return A new instance of Histogram.
+    /**
+     * Create a new Histogram object for the applet.
+     *
+     * @return A new instance of Histogram.
      */
     public PlotBox newPlot() {
         return new Histogram();

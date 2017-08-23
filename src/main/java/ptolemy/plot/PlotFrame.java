@@ -26,36 +26,19 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Event;
-import java.awt.Toolkit;
+import ptolemy.util.StringUtilities;
+
+import javax.print.attribute.HashPrintRequestAttributeSet;
+import javax.print.attribute.PrintRequestAttributeSet;
+import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.print.PrinterJob;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
-
-import javax.print.attribute.HashPrintRequestAttributeSet;
-import javax.print.attribute.PrintRequestAttributeSet;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.KeyStroke;
-import javax.swing.UIManager;
-import javax.swing.filechooser.FileFilter;
-
-import ptolemy.util.StringUtilities;
 
 
 // TO DO:
@@ -64,62 +47,106 @@ import ptolemy.util.StringUtilities;
 //// PlotFrame
 
 /**
-
-PlotFrame is a versatile two-dimensional data plotter that runs as
-part of an application, but in its own window. It can read files
-compatible with the old Ptolemy plot file format (currently only ASCII).
-It is extended with the capability to read PlotML files in PlotMLFrame.
-An application can also interact directly with the contained Plot
-object, which is visible as a public member, by invoking its methods.
-<p>
-An application that uses this class should set up the handling of
-window-closing events.  Presumably, the application will exit when
-all windows have been closed. This is done with code something like:
-<pre>
-plotFrameInstance.addWindowListener(new WindowAdapter() {
-public void windowClosing(WindowEvent e) {
-// Handle the event
-}
-});
-</pre>
-<p>
-PlotFrame contains an instance of PlotBox. PlotBox is the base class for
-classes with drawing capability, e.g. Plot, LogicAnalyzer. If not
-specified in the constructor, the default is to contain a Plot object. This
-field is set once in the constructor and immutable afterwards.
-
-@see Plot
-@see PlotBox
-@author Christopher Hylands and Edward A. Lee
-@version $Id: PlotFrame.java,v 1.81 2005/04/29 20:06:10 cxh Exp $
-@since Ptolemy II 0.2
-@Pt.ProposedRating Yellow (cxh)
-@Pt.AcceptedRating Yellow (cxh)
-*/
+ * PlotFrame is a versatile two-dimensional data plotter that runs as
+ * part of an application, but in its own window. It can read files
+ * compatible with the old Ptolemy plot file format (currently only ASCII).
+ * It is extended with the capability to read PlotML files in PlotMLFrame.
+ * An application can also interact directly with the contained Plot
+ * object, which is visible as a public member, by invoking its methods.
+ * <p>
+ * An application that uses this class should set up the handling of
+ * window-closing events.  Presumably, the application will exit when
+ * all windows have been closed. This is done with code something like:
+ * <pre>
+ * plotFrameInstance.addWindowListener(new WindowAdapter() {
+ * public void windowClosing(WindowEvent e) {
+ * // Handle the event
+ * }
+ * });
+ * </pre>
+ * <p>
+ * PlotFrame contains an instance of PlotBox. PlotBox is the base class for
+ * classes with drawing capability, e.g. Plot, LogicAnalyzer. If not
+ * specified in the constructor, the default is to contain a Plot object. This
+ * field is set once in the constructor and immutable afterwards.
+ *
+ * @author Christopher Hylands and Edward A. Lee
+ * @version $Id: PlotFrame.java,v 1.81 2005/04/29 20:06:10 cxh Exp $
+ * @Pt.ProposedRating Yellow (cxh)
+ * @Pt.AcceptedRating Yellow (cxh)
+ * @see Plot
+ * @see PlotBox
+ * @since Ptolemy II 0.2
+ */
 public class PlotFrame extends JFrame {
-    /** Construct a plot frame with a default title and by default contains
-     *  an instance of Plot. After constructing this, it is necessary
-     *  to call setVisible(true) to make the plot appear.
+    /**
+     * @serial The plot object held by this frame.
+     */
+
+    // FIXME: uncomment final when we upgrade to jdk1.2
+    public /*final*/ PlotBox plot;
+    /**
+     * @serial Menubar for this frame.
+     */
+    protected JMenuBar _menubar = new JMenuBar();
+    /**
+     * @serial Edit menu for this frame.
+     */
+    protected JMenu _editMenu = new JMenu("Edit");
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         public methods                    ////
+    /**
+     * @serial File menu for this frame.
+     */
+    protected JMenu _fileMenu = new JMenu("File");
+    /**
+     * @serial Special menu for this frame.
+     */
+    protected JMenu _specialMenu = new JMenu("Special");
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         public variables                  ////
+    /**
+     * @serial Directory that contains the input file.
+     */
+    protected File _directory = null;
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected variables               ////
+    /**
+     * @serial The input file.
+     */
+    protected File _file = null;
+
+    /**
+     * Construct a plot frame with a default title and by default contains
+     * an instance of Plot. After constructing this, it is necessary
+     * to call setVisible(true) to make the plot appear.
      */
     public PlotFrame() {
         this("Ptolemy Plot Frame");
     }
 
-    /** Construct a plot frame with the specified title and by default
-     *  contains an instance of Plot. After constructing this, it is necessary
-     *  to call setVisible(true) to make the plot appear.
-     *  @param title The title to put on the window.
+    /**
+     * Construct a plot frame with the specified title and by default
+     * contains an instance of Plot. After constructing this, it is necessary
+     * to call setVisible(true) to make the plot appear.
+     *
+     * @param title The title to put on the window.
      */
     public PlotFrame(String title) {
         this(title, null);
     }
 
-    /** Construct a plot frame with the specified title and the specified
-     *  instance of PlotBox.  After constructing this, it is necessary
-     *  to call setVisible(true) to make the plot appear.
-     *  @param title The title to put on the window.
-     *  @param plotArg the plot object to put in the frame, or null to create
-     *   an instance of Plot.
+    /**
+     * Construct a plot frame with the specified title and the specified
+     * instance of PlotBox.  After constructing this, it is necessary
+     * to call setVisible(true) to make the plot appear.
+     *
+     * @param title   The title to put on the window.
+     * @param plotArg the plot object to put in the frame, or null to create
+     *                an instance of Plot.
      */
     public PlotFrame(String title, PlotBox plotArg) {
         super(title);
@@ -147,29 +174,29 @@ public class PlotFrame extends JFrame {
 
         // File menu
         JMenuItem[] fileMenuItems = {
-            new JMenuItem("Open", KeyEvent.VK_O),
-            new JMenuItem("Save", KeyEvent.VK_S),
-            new JMenuItem("SaveAs", KeyEvent.VK_A),
-            new JMenuItem("Export", KeyEvent.VK_E),
-            new JMenuItem("Print", KeyEvent.VK_P),
-            new JMenuItem("Close", KeyEvent.VK_C),
+                new JMenuItem("Open", KeyEvent.VK_O),
+                new JMenuItem("Save", KeyEvent.VK_S),
+                new JMenuItem("SaveAs", KeyEvent.VK_A),
+                new JMenuItem("Export", KeyEvent.VK_E),
+                new JMenuItem("Print", KeyEvent.VK_P),
+                new JMenuItem("Close", KeyEvent.VK_C),
         };
 
         // Open button = ctrl-o.
         fileMenuItems[0].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O,
-                                                Event.CTRL_MASK));
+                Event.CTRL_MASK));
 
         // Save button = ctrl-s.
         fileMenuItems[1].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,
-                                                Event.CTRL_MASK));
+                Event.CTRL_MASK));
 
         // Print button = ctrl-p.
         fileMenuItems[4].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P,
-                                                Event.CTRL_MASK));
+                Event.CTRL_MASK));
 
         // Close button = ctrl-w.
         fileMenuItems[5].setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_W,
-                                                Event.CTRL_MASK));
+                Event.CTRL_MASK));
 
         FileMenuListener fml = new FileMenuListener();
 
@@ -191,12 +218,12 @@ public class PlotFrame extends JFrame {
 
         // Special menu
         JMenuItem[] specialMenuItems = {
-            new JMenuItem("About", KeyEvent.VK_A),
-            new JMenuItem("Help", KeyEvent.VK_H),
-            new JMenuItem("Clear", KeyEvent.VK_C),
-            new JMenuItem("Fill", KeyEvent.VK_F),
-            new JMenuItem("Reset axes", KeyEvent.VK_R),
-            new JMenuItem("Sample plot", KeyEvent.VK_S),
+                new JMenuItem("About", KeyEvent.VK_A),
+                new JMenuItem("Help", KeyEvent.VK_H),
+                new JMenuItem("Clear", KeyEvent.VK_C),
+                new JMenuItem("Fill", KeyEvent.VK_F),
+                new JMenuItem("Reset axes", KeyEvent.VK_R),
+                new JMenuItem("Sample plot", KeyEvent.VK_S),
         };
         SpecialMenuListener sml = new SpecialMenuListener();
 
@@ -224,10 +251,8 @@ public class PlotFrame extends JFrame {
         setLocation(x, y);
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         public methods                    ////
-
-    /** Create a sample plot.
+    /**
+     * Create a sample plot.
      */
     public void samplePlot() {
         _file = null;
@@ -235,10 +260,12 @@ public class PlotFrame extends JFrame {
         plot.samplePlot();
     }
 
-    /** Set the visibility.  As a side effect, this method
-     *  sets the background of the menus.
-     *  @param visible True if the Frame is to be visible, false
-     *  if it is not visible.
+    /**
+     * Set the visibility.  As a side effect, this method
+     * sets the background of the menus.
+     *
+     * @param visible True if the Frame is to be visible, false
+     *                if it is not visible.
      */
     public void setVisible(boolean visible) {
         super.setVisible(visible);
@@ -248,63 +275,37 @@ public class PlotFrame extends JFrame {
     }
 
     ///////////////////////////////////////////////////////////////////
-    ////                         public variables                  ////
-
-    /** @serial The plot object held by this frame. */
-
-    // FIXME: uncomment final when we upgrade to jdk1.2
-    public /*final*/ PlotBox plot;
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected variables               ////
-
-    /** @serial Menubar for this frame. */
-    protected JMenuBar _menubar = new JMenuBar();
-
-    /** @serial Edit menu for this frame. */
-    protected JMenu _editMenu = new JMenu("Edit");
-
-    /** @serial File menu for this frame. */
-    protected JMenu _fileMenu = new JMenu("File");
-
-    /** @serial Special menu for this frame. */
-    protected JMenu _specialMenu = new JMenu("Special");
-
-    /** @serial Directory that contains the input file. */
-    protected File _directory = null;
-
-    /** @serial The input file. */
-    protected File _file = null;
-
-    ///////////////////////////////////////////////////////////////////
     ////                         protected methods                 ////
     protected void _about() {
         JOptionPane.showMessageDialog(this,
                 "PlotFrame class\n" + "By: Edward A. Lee "
-                + "and Christopher Hylands\n" + "Version " + PlotBox.PTPLOT_RELEASE
-                + ", Build: $Id: PlotFrame.java,v 1.81 2005/04/29 20:06:10 cxh Exp $\n\n"
-                + "For more information, see\n"
-                + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n\n"
-                + "Copyright (c) 1997-2005, "
-                + "The Regents of the University of California.",
+                        + "and Christopher Hylands\n" + "Version " + PlotBox.PTPLOT_RELEASE
+                        + ", Build: $Id: PlotFrame.java,v 1.81 2005/04/29 20:06:10 cxh Exp $\n\n"
+                        + "For more information, see\n"
+                        + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n\n"
+                        + "Copyright (c) 1997-2005, "
+                        + "The Regents of the University of California.",
                 "About Ptolemy Plot", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** Close the window.
+    /**
+     * Close the window.
      */
     protected void _close() {
         dispose();
     }
 
-    /** Interactively edit the file format in a modal dialog.
+    /**
+     * Interactively edit the file format in a modal dialog.
      */
     protected void _editFormat() {
         PlotFormatter fmt = new PlotFormatter(plot);
         fmt.openModal();
     }
 
-    /** Query the user for a filename and export the plot to that file.
-     *  Currently, the only supported format is EPS.
+    /**
+     * Query the user for a filename and export the plot to that file.
+     * Currently, the only supported format is EPS.
      */
     protected void _export() {
         JFileChooser fileDialog = new JFileChooser();
@@ -325,7 +326,7 @@ public class PlotFrame extends JFrame {
         }
 
         fileDialog.setSelectedFile(new File(fileDialog.getCurrentDirectory(),
-                                           "plot.eps"));
+                "plot.eps"));
 
         int returnVal = fileDialog.showDialog(this, "Export");
 
@@ -355,17 +356,19 @@ public class PlotFrame extends JFrame {
         }
     }
 
-    /** Display more detailed information than given by _about().
+    /**
+     * Display more detailed information than given by _about().
      */
     protected void _help() {
         JOptionPane.showMessageDialog(this,
                 "PlotFrame is a plot in a top-level window.\n"
-                + "  File formats understood: Ptplot ASCII.\n"
-                + "  Left mouse button: Zooming.", "About Ptolemy Plot",
+                        + "  File formats understood: Ptplot ASCII.\n"
+                        + "  Left mouse button: Zooming.", "About Ptolemy Plot",
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** Open a new file and plot its data.
+    /**
+     * Open a new file and plot its data.
      */
     protected void _open() {
         JFileChooser fileDialog = new JFileChooser();
@@ -411,7 +414,8 @@ public class PlotFrame extends JFrame {
         }
     }
 
-    /** Print the plot.
+    /**
+     * Print the plot.
      */
     protected void _print() {
         _printCrossPlatform();
@@ -419,10 +423,11 @@ public class PlotFrame extends JFrame {
         //_printNative();
     }
 
-    /** Print using the cross platform dialog.
-     *  FIXME: this dialog is slow and is often hidden
-     *  behind other windows.  However, it does honor
-     *  the user's choice of portrait vs. landscape
+    /**
+     * Print using the cross platform dialog.
+     * FIXME: this dialog is slow and is often hidden
+     * behind other windows.  However, it does honor
+     * the user's choice of portrait vs. landscape
      */
     protected void _printCrossPlatform() {
         // Build a set of attributes
@@ -441,9 +446,10 @@ public class PlotFrame extends JFrame {
         }
     }
 
-    /** Print using the native dialog.
-     *  FIXME: This method does not seem to honor the user's
-     *  choice of portrait vs. landscape.
+    /**
+     * Print using the native dialog.
+     * FIXME: This method does not seem to honor the user's
+     * choice of portrait vs. landscape.
      */
     protected void _printNative() {
         PrinterJob job = PrinterJob.getPrinterJob();
@@ -465,19 +471,22 @@ public class PlotFrame extends JFrame {
         }
     }
 
-    /** Read the specified stream.  Derived classes may override this
-     *  to support other file formats.
-     *  @param base The base for relative file references, or null if
-     *   there are not relative file references.
-     *  @param in The input stream.
-     *  @exception IOException If the stream cannot be read.
+    /**
+     * Read the specified stream.  Derived classes may override this
+     * to support other file formats.
+     *
+     * @param base The base for relative file references, or null if
+     *             there are not relative file references.
+     * @param in   The input stream.
+     * @throws IOException If the stream cannot be read.
      */
     protected void _read(URL base, InputStream in) throws IOException {
         plot.read(in);
     }
 
-    /** Save the plot to the current file, determined by the
-     *  and _file protected variable.
+    /**
+     * Save the plot to the current file, determined by the
+     * and _file protected variable.
      */
     protected void _save() {
         if (_file != null) {
@@ -494,7 +503,8 @@ public class PlotFrame extends JFrame {
         }
     }
 
-    /** Query the user for a filename and save the plot to that file.
+    /**
+     * Query the user for a filename and save the plot to that file.
      */
     protected void _saveAs() {
         JFileChooser fileDialog = new JFileChooser();
@@ -515,7 +525,7 @@ public class PlotFrame extends JFrame {
         }
 
         fileDialog.setSelectedFile(new File(fileDialog.getCurrentDirectory(),
-                                           "plot.xml"));
+                "plot.xml"));
 
         int returnVal = fileDialog.showSaveDialog(this);
 
@@ -624,11 +634,15 @@ public class PlotFrame extends JFrame {
     ///////////////////////////////////////////////////////////////////
     ////                         inner classes                     ////
 
-    /** Display only .eps files */
+    /**
+     * Display only .eps files
+     */
     class EPSFileFilter extends FileFilter {
-        /** Accept only .eps files.
-         *  @param file The file to be checked.
-         *  @return true if the file is a directory, a .eps file
+        /**
+         * Accept only .eps files.
+         *
+         * @param file The file to be checked.
+         * @return true if the file is a directory, a .eps file
          */
         public boolean accept(File fileOrDirectory) {
             if (fileOrDirectory.isDirectory()) {
@@ -655,17 +669,23 @@ public class PlotFrame extends JFrame {
             return false;
         }
 
-        /**  The description of this filter */
+        /**
+         * The description of this filter
+         */
         public String getDescription() {
             return "Encapsulated PostScript (.eps) files";
         }
     }
 
-    /** Display only .plt and .xml files */
+    /**
+     * Display only .plt and .xml files
+     */
     class PLTOrXMLFileFilter extends FileFilter {
-        /** Accept only .plt or .xml files.
-         *  @param file The file to be checked.
-         *  @return true if the file is a directory, a .plot or a .xml file.
+        /**
+         * Accept only .plt or .xml files.
+         *
+         * @param file The file to be checked.
+         * @return true if the file is a directory, a .plot or a .xml file.
          */
         public boolean accept(File fileOrDirectory) {
             if (fileOrDirectory.isDirectory()) {
@@ -693,7 +713,9 @@ public class PlotFrame extends JFrame {
             return false;
         }
 
-        /**  The description of this filter */
+        /**
+         * The description of this filter
+         */
         public String getDescription() {
             return ".plt and .xml files";
         }

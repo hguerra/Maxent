@@ -35,30 +35,32 @@ import ptolemy.plot.PlotBox;
 //// HistogramMLApplet
 
 /**
-   This applet reads a URL giving a PlotML file that contains data.
-   It plots a histogram of that data.
-
-   @see Histogram
-   @author Edward A. Lee
-   @version $Id: HistogramMLApplet.java,v 1.24 2005/04/25 22:52:16 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-*/
+ * This applet reads a URL giving a PlotML file that contains data.
+ * It plots a histogram of that data.
+ *
+ * @author Edward A. Lee
+ * @version $Id: HistogramMLApplet.java,v 1.24 2005/04/25 22:52:16 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @see Histogram
+ * @since Ptolemy II 0.4
+ */
 public class HistogramMLApplet extends PlotMLApplet {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
 
-    /** Return a string describing this applet.
+    /**
+     * Return a string describing this applet.
      */
     public String getAppletInfo() {
         return "HistogramMLApplet " + PlotBox.PTPLOT_RELEASE
-            + ": A histogram plotter.\n" + "By: Edward A. Lee.\n"
-            + "($Id: HistogramMLApplet.java,v 1.24 2005/04/25 22:52:16 cxh Exp $)";
+                + ": A histogram plotter.\n" + "By: Edward A. Lee.\n"
+                + "($Id: HistogramMLApplet.java,v 1.24 2005/04/25 22:52:16 cxh Exp $)";
     }
 
-    /** Create a new Plot object for the applet.  Derived classes can
-     *  redefine this method to return a different type of plot object.
+    /**
+     * Create a new Plot object for the applet.  Derived classes can
+     * redefine this method to return a different type of plot object.
      */
     public PlotBox newPlot() {
         return new Histogram();
@@ -67,7 +69,8 @@ public class HistogramMLApplet extends PlotMLApplet {
     ///////////////////////////////////////////////////////////////////
     ////                         protected methods                 ////
 
-    /** Create a new parser object for the applet.
+    /**
+     * Create a new parser object for the applet.
      */
     protected PlotMLParser _newParser() {
         return new HistogramMLParser((Histogram) plot());

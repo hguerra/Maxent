@@ -37,35 +37,50 @@ import java.io.Serializable;
 //// PlotPoint
 
 /**
-   A simple structure for storing a plot point.
-   @author Edward A. Lee
-   @version $Id: PlotPoint.java,v 1.36 2005/03/01 01:00:40 cxh Exp $
-   @since Ptolemy II 0.2
-   @Pt.ProposedRating Yellow (cxh)
-   @Pt.AcceptedRating Yellow (cxh)
-*/
+ * A simple structure for storing a plot point.
+ *
+ * @author Edward A. Lee
+ * @version $Id: PlotPoint.java,v 1.36 2005/03/01 01:00:40 cxh Exp $
+ * @Pt.ProposedRating Yellow (cxh)
+ * @Pt.AcceptedRating Yellow (cxh)
+ * @since Ptolemy II 0.2
+ */
 public class PlotPoint implements Serializable {
     ///////////////////////////////////////////////////////////////////
     ////                         public variables                  ////
 
-    /** True if this point is connected to the previous point by a line. */
+    /**
+     * True if this point is connected to the previous point by a line.
+     */
     public boolean connected = false;
 
-    /** True if the yLowEB and yHighEB fields are valid. */
+    /**
+     * True if the yLowEB and yHighEB fields are valid.
+     */
     public boolean errorBar = false;
 
-    /** Original value of x before wrapping. */
+    /**
+     * Original value of x before wrapping.
+     */
     public double originalx;
 
-    /** X value after wrapping (if any). */
+    /**
+     * X value after wrapping (if any).
+     */
     public double x;
 
-    /** Y value. */
+    /**
+     * Y value.
+     */
     public double y;
 
-    /** Error bar Y low value. */
+    /**
+     * Error bar Y low value.
+     */
     public double yLowEB;
 
-    /** Error bar Y low value. */
+    /**
+     * Error bar Y low value.
+     */
     public double yHighEB;
 }

@@ -31,72 +31,73 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot.plotml;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-
-import javax.swing.JOptionPane;
-
+import com.microstar.xml.XmlException;
 import ptolemy.plot.Plot;
 import ptolemy.plot.PlotBox;
 import ptolemy.plot.PlotFrame;
 
-import com.microstar.xml.XmlException;
+import javax.swing.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// PlotMLFrame
 
 /**
-   PlotMLFrame is a versatile two-dimensional data plotter that runs as
-   part of an application, but in its own window. It can read files
-   in the PlotML format and, for backward compatibility, the old Ptolemy
-   plot file format.
-   An application can also interact directly with the contained Plot
-   object, which is visible as a public member, by invoking its methods.
-   <p>
-   An application that uses this class should set up the handling of
-   window-closing events.  Presumably, the application will exit when
-   all windows have been closed. This is done with code something like:
-   <pre>
-   plotFrameInstance.addWindowListener(new WindowAdapter() {
-   public void windowClosing(WindowEvent e) {
-   // Handle the event
-   }
-   });
-   </pre>
-   <p>
-   PlotMLFrame contains an instance of PlotBox. PlotBox is the base class for
-   classes with drawing capability, e.g. Plot, LogicAnalyzer. If not
-   specified in the constructor, the default is to contain a Plot object. This
-   field is set once in the constructor and immutable afterwards.
-
-   @see Plot
-   @see PlotBox
-   @author Christopher Hylands and Edward A. Lee
-   @version $Id: PlotMLFrame.java,v 1.28 2005/04/29 20:05:03 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-*/
+ * PlotMLFrame is a versatile two-dimensional data plotter that runs as
+ * part of an application, but in its own window. It can read files
+ * in the PlotML format and, for backward compatibility, the old Ptolemy
+ * plot file format.
+ * An application can also interact directly with the contained Plot
+ * object, which is visible as a public member, by invoking its methods.
+ * <p>
+ * An application that uses this class should set up the handling of
+ * window-closing events.  Presumably, the application will exit when
+ * all windows have been closed. This is done with code something like:
+ * <pre>
+ * plotFrameInstance.addWindowListener(new WindowAdapter() {
+ * public void windowClosing(WindowEvent e) {
+ * // Handle the event
+ * }
+ * });
+ * </pre>
+ * <p>
+ * PlotMLFrame contains an instance of PlotBox. PlotBox is the base class for
+ * classes with drawing capability, e.g. Plot, LogicAnalyzer. If not
+ * specified in the constructor, the default is to contain a Plot object. This
+ * field is set once in the constructor and immutable afterwards.
+ *
+ * @author Christopher Hylands and Edward A. Lee
+ * @version $Id: PlotMLFrame.java,v 1.28 2005/04/29 20:05:03 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @see Plot
+ * @see PlotBox
+ * @since Ptolemy II 0.4
+ */
 public class PlotMLFrame extends PlotFrame {
-    /** Construct a plot with no command-line arguments.
-     *  It initially displays a sample plot.
+    /**
+     * Construct a plot with no command-line arguments.
+     * It initially displays a sample plot.
      */
     public PlotMLFrame() {
         this("Ptolemy Plot Frame");
     }
 
-    /** Construct a plot frame with the specified title and by default
-     *  contains an instance of Plot.
+    /**
+     * Construct a plot frame with the specified title and by default
+     * contains an instance of Plot.
      */
     public PlotMLFrame(String title) {
         this(title, null);
     }
 
-    /** Construct a plot frame with the specified title and the specified
-     *  instance of PlotBox.
+    /**
+     * Construct a plot frame with the specified title and the specified
+     * instance of PlotBox.
      */
     public PlotMLFrame(String title, PlotBox plotArg) {
         super(title, plotArg);
@@ -105,27 +106,30 @@ public class PlotMLFrame extends PlotFrame {
     ///////////////////////////////////////////////////////////////////
     ////                         protected methods                 ////
 
-    /** Display basic information about the application.
+    /**
+     * Display basic information about the application.
      */
     protected void _about() {
         JOptionPane.showMessageDialog(this,
                 "Ptolemy plot frame\n" + "By: Edward A. Lee\n"
-                + "and Christopher Hylands\n" + "Version " + PlotBox.PTPLOT_RELEASE
-                + ", Build: $Id: PlotMLFrame.java,v 1.28 2005/04/29 20:05:03 cxh Exp $"
-                + "For more information, see\n"
-                + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n",
+                        + "and Christopher Hylands\n" + "Version " + PlotBox.PTPLOT_RELEASE
+                        + ", Build: $Id: PlotMLFrame.java,v 1.28 2005/04/29 20:05:03 cxh Exp $"
+                        + "For more information, see\n"
+                        + "http://ptolemy.eecs.berkeley.edu/java/ptplot\n",
                 "About Ptolemy Plot", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** Read the specified stream.  This method checks to see whether
-     *  the data is PlotML data, and if so, creates a parser to read it.
-     *  If not, it defers to the parent class to read it.  The current
-     *  working directory (or the directory of the last opened or saved
-     *  file) is the base for relative references.
-     *  @param base The base for relative file references, or null if
-     *   there are not relative file references.
-     *  @param in The input stream.
-     *  @exception IOException If the stream cannot be read.
+    /**
+     * Read the specified stream.  This method checks to see whether
+     * the data is PlotML data, and if so, creates a parser to read it.
+     * If not, it defers to the parent class to read it.  The current
+     * working directory (or the directory of the last opened or saved
+     * file) is the base for relative references.
+     *
+     * @param base The base for relative file references, or null if
+     *             there are not relative file references.
+     * @param in   The input stream.
+     * @throws IOException If the stream cannot be read.
      */
     protected void _read(URL base, InputStream in) throws IOException {
         // Create a buffered input stream so that mark and reset
@@ -158,9 +162,9 @@ public class PlotMLFrame extends PlotFrame {
                 if (ex instanceof XmlException) {
                     XmlException xmlex = (XmlException) ex;
                     msg = "PlotMLFrame: failed to parse PlotML data:\n"
-                        + "line: " + xmlex.getLine() + ", column: "
-                        + xmlex.getColumn() + "\nIn entity: "
-                        + xmlex.getSystemId() + "\n";
+                            + "line: " + xmlex.getLine() + ", column: "
+                            + xmlex.getColumn() + "\nIn entity: "
+                            + xmlex.getSystemId() + "\n";
                 } else {
                     msg = "PlotMLFrame: failed to parse PlotML data:\n";
                 }

@@ -23,9 +23,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package density.tools;
 
-class Node { 
-    int r, c, heapIndex; 
-    double qweight; 
-    Node(int rr, int cc) { r=rr; c = cc; }
+class Node {
+    int r, c, heapIndex;
+    double qweight;
+
+    Node(int rr, int cc) {
+        r = rr;
+        c = cc;
+    }
 }
 

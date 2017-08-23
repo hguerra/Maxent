@@ -3,46 +3,32 @@
 
 package ptolemy.plot;
 
-import java.awt.BasicStroke;
-import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.Serializable;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.Vector;
-
-import javax.swing.JComponent;
+import java.awt.*;
 
 
 public class MyPlot extends Plot {
+    public boolean horizontal = false;
     private double barWidth = 0.5;
     private double _barOffset = 0.05;
 
     public double plotXtoX(int plotX) {
-	return _xMin + ((plotX - _ulx) / _xscale);
+        return _xMin + ((plotX - _ulx) / _xscale);
     }
 
-    public boolean horizontal = false;
-
     public synchronized void setBars(double width, double offset) {
-	super.setBars(width, offset);
+        super.setBars(width, offset);
         barWidth = width;
         _barOffset = offset;
     }
 
     protected void _drawBar(Graphics graphics, int dataset, long xpos,
-            long ypos, boolean clip) {
-	if (horizontal) _drawBarHorizontal(graphics, dataset, xpos, ypos, clip);
-	else super._drawBar(graphics, dataset, xpos, ypos, clip);
+                            long ypos, boolean clip) {
+        if (horizontal) _drawBarHorizontal(graphics, dataset, xpos, ypos, clip);
+        else super._drawBar(graphics, dataset, xpos, ypos, clip);
     }
 
     protected void _drawBarHorizontal(Graphics graphics, int dataset, long xpos,
-            long ypos, boolean clip) {
+                                      long ypos, boolean clip) {
         if (clip) {
             if (xpos < _ulx) {
                 xpos = _ulx;
@@ -85,20 +71,21 @@ public class MyPlot extends Plot {
                 zeroxpos = _ulx;
             }
 
-	    // Why the first term here???
-	    //            if ((_xMin <= 0) || (xpos <= zeroxpos)) {
+            // Why the first term here???
+            //            if ((_xMin <= 0) || (xpos <= zeroxpos)) {
             if (xpos <= zeroxpos) {
-                graphics.fillRect((int) xpos, barly, 
+                graphics.fillRect((int) xpos, barly,
                         (int) (zeroxpos - xpos), barry - barly);
             } else {
-                graphics.fillRect((int) zeroxpos, barly, 
+                graphics.fillRect((int) zeroxpos, barly,
                         (int) (xpos - zeroxpos), barry - barly);
             }
         }
     }
+
     // do this immediately, rather than in the event dispatch thread.
     public synchronized void addPoint(final int dataset, final double x,
-            final double y, final boolean connected) {
-	_addPoint(dataset, x, y, 0, 0, connected, false);
+                                      final double y, final boolean connected) {
+        _addPoint(dataset, x, y, 0, 0, connected, false);
     }
 }

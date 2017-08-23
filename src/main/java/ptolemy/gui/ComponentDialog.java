@@ -26,100 +26,142 @@ COPYRIGHTENDKEY
 */
 package ptolemy.gui;
 
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Frame;
-import java.awt.Toolkit;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JDialog;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// ComponentDialog
 
 /**
-
-This class is a modal dialog box that contains an arbitrary component.
-It can be used, for example, to put an instance of Query in a
-top-level dialog box.  The general way to use this class is to create
-the component that you wish to have contained in the dialog.
-Then pass that component to the constructor of this class.  The dialog
-is modal, so the statement that creates the dialog will not return
-until the user dismisses the dialog.  The method buttonPressed()
-can then be called to find out whether the user clicked the OK button
-or the Cancel button (or any other button specified in the constructor).
-Then you can access the component to determine what values were set
-by the user.
-<p>
-If the component that is added implements the CloseListener interface,
-then that component is notified when this dialog closes.
-
-@see CloseListener
-@author Edward A. Lee
-@version $Id: ComponentDialog.java,v 1.33 2005/04/26 03:08:37 cxh Exp $
-@since Ptolemy II 0.4
-@Pt.ProposedRating Yellow (eal)
-@Pt.AcceptedRating Yellow (janneck)
-*/
+ * This class is a modal dialog box that contains an arbitrary component.
+ * It can be used, for example, to put an instance of Query in a
+ * top-level dialog box.  The general way to use this class is to create
+ * the component that you wish to have contained in the dialog.
+ * Then pass that component to the constructor of this class.  The dialog
+ * is modal, so the statement that creates the dialog will not return
+ * until the user dismisses the dialog.  The method buttonPressed()
+ * can then be called to find out whether the user clicked the OK button
+ * or the Cancel button (or any other button specified in the constructor).
+ * Then you can access the component to determine what values were set
+ * by the user.
+ * <p>
+ * If the component that is added implements the CloseListener interface,
+ * then that component is notified when this dialog closes.
+ *
+ * @author Edward A. Lee
+ * @version $Id: ComponentDialog.java,v 1.33 2005/04/26 03:08:37 cxh Exp $
+ * @Pt.ProposedRating Yellow (eal)
+ * @Pt.AcceptedRating Yellow (janneck)
+ * @see CloseListener
+ * @since Ptolemy II 0.4
+ */
 public class ComponentDialog extends JDialog {
-    /** Construct a dialog with the specified owner, title, and component.
-     *  An "OK" and a "Cancel" button are added to the dialog.
-     *  The dialog is placed relative to the owner.
-     *  @param owner The object that, per the user, appears to be
-     *   generating the dialog.
-     *  @param title The title of the dialog.
-     *  @param component The component to insert in the dialog.
+    /**
+     * Button labels.
+     */
+    private static String[] _buttons;
+    /**
+     * Default button labels.
+     */
+    private static String[] _defaultButtons = {
+            "OK",
+            "Cancel"
+    };
+    /**
+     * The component contained by this dialog.
+     */
+    public Component contents;
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         public methods                    ////
+    /**
+     * The label of the button pushed to dismiss the dialog.
+     */
+    protected String _buttonPressed = "";
+    /**
+     * Indicator that we have notified of window closing.
+     */
+    private boolean _doneHandleClosing = false;
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected methods                 ////
+    /**
+     * The pane with the buttons.
+     */
+    private JOptionPane _optionPane;
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         public variables                  ////
+    /**
+     * The container for messages.
+     */
+    private JTextArea _messageArea;
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected variables               ////
+
+    /**
+     * Construct a dialog with the specified owner, title, and component.
+     * An "OK" and a "Cancel" button are added to the dialog.
+     * The dialog is placed relative to the owner.
+     *
+     * @param owner     The object that, per the user, appears to be
+     *                  generating the dialog.
+     * @param title     The title of the dialog.
+     * @param component The component to insert in the dialog.
      */
     public ComponentDialog(Frame owner, String title, Component component) {
         this(owner, title, component, null, null);
     }
 
-    /** Construct a dialog with the specified owner, title, component,
-     *  and buttons.  The first button is the "default" in that
-     *  it is the one activated by "Enter" or "Return" keys.
-     *  If the last argument is null, then an "OK"
-     *  and a "Cancel" button will be created.
-     *  The dialog is placed relative to the owner.
-     *  @param owner The object that, per the user, appears to be
-     *   generating the dialog.
-     *  @param title The title of the dialog.
-     *  @param component The component to insert in the dialog.
-     *  @param buttons An array of labels for buttons at the bottom
-     *   of the dialog.
+    ///////////////////////////////////////////////////////////////////
+    ////                         private variables                 ////
+
+    /**
+     * Construct a dialog with the specified owner, title, component,
+     * and buttons.  The first button is the "default" in that
+     * it is the one activated by "Enter" or "Return" keys.
+     * If the last argument is null, then an "OK"
+     * and a "Cancel" button will be created.
+     * The dialog is placed relative to the owner.
+     *
+     * @param owner     The object that, per the user, appears to be
+     *                  generating the dialog.
+     * @param title     The title of the dialog.
+     * @param component The component to insert in the dialog.
+     * @param buttons   An array of labels for buttons at the bottom
+     *                  of the dialog.
      */
     public ComponentDialog(Frame owner, String title, Component component,
-            String[] buttons) {
+                           String[] buttons) {
         this(owner, title, component, buttons, null);
     }
 
-    /** Construct a dialog with the specified owner, title, component,
-     *  buttons, and message.  The message is placed above the component.
-     *  The first button is the "default" in that
-     *  it is the one activated by "Enter" or "Return" keys.
-     *  If the <i>buttons</i> argument is null, then an "OK"
-     *  and a "Cancel" button will be created.
-     *  The dialog is placed relative to the owner.
-     *  @param owner The object that, per the user, appears to be
-     *   generating the dialog.
-     *  @param title The title of the dialog.
-     *  @param component The component to insert in the dialog.
-     *  @param buttons An array of labels for buttons at the bottom
-     *   of the dialog.
-     *  @param message A message to place above the component, or null
-     *   if no message is needed.
+    /**
+     * Construct a dialog with the specified owner, title, component,
+     * buttons, and message.  The message is placed above the component.
+     * The first button is the "default" in that
+     * it is the one activated by "Enter" or "Return" keys.
+     * If the <i>buttons</i> argument is null, then an "OK"
+     * and a "Cancel" button will be created.
+     * The dialog is placed relative to the owner.
+     *
+     * @param owner     The object that, per the user, appears to be
+     *                  generating the dialog.
+     * @param title     The title of the dialog.
+     * @param component The component to insert in the dialog.
+     * @param buttons   An array of labels for buttons at the bottom
+     *                  of the dialog.
+     * @param message   A message to place above the component, or null
+     *                  if no message is needed.
      */
     public ComponentDialog(Frame owner, String title, Component component,
-            String[] buttons, String message) {
+                           String[] buttons, String message) {
         super(owner, title, true);
 
         // Create a panel that contains the optional message
@@ -156,51 +198,51 @@ public class ComponentDialog extends JDialog {
 
         // The following code is based on Sun's CustomDialog example...
         _optionPane.addPropertyChangeListener(new PropertyChangeListener() {
-                public void propertyChange(PropertyChangeEvent e) {
-                    String prop = e.getPropertyName();
+            public void propertyChange(PropertyChangeEvent e) {
+                String prop = e.getPropertyName();
 
-                    // PropertyChange is an extremely non-selective listener,
-                    // so we have to filter...
-                    if (isVisible() && (e.getSource() == _optionPane)
-                            && (prop.equals(JOptionPane.VALUE_PROPERTY)
-                                    || prop.equals(
-                                            JOptionPane
-                                            .INPUT_VALUE_PROPERTY))) {
-                        Object value = _optionPane.getValue();
+                // PropertyChange is an extremely non-selective listener,
+                // so we have to filter...
+                if (isVisible() && (e.getSource() == _optionPane)
+                        && (prop.equals(JOptionPane.VALUE_PROPERTY)
+                        || prop.equals(
+                        JOptionPane
+                                .INPUT_VALUE_PROPERTY))) {
+                    Object value = _optionPane.getValue();
 
-                        // Ignore reset.
-                        if (value == JOptionPane.UNINITIALIZED_VALUE) {
-                            return;
-                        }
-
-                        // Reset the JOptionPane's value.
-                        // If you don't do this, then if the user
-                        // presses the same button next time, no
-                        // property change event will be fired.
-                        // Note that this seems to trigger the listener
-                        // again, so the previous line is essential.
-                        _optionPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
-
-                        if (value instanceof String) {
-                            // A button was pressed...
-                            _buttonPressed = (String) value;
-                        }
-
-                        // Close the window.
-                        setVisible(false);
-
-                        // Take any action that might be associated with
-                        // window closing.
-                        _handleClosing();
-
-                        // Java's AWT yields random results if we do this.
-                        // And anyway, it doesn't work.  Components still don't
-                        // have their ComponentListener methods called to indicate
-                        // that they have become invisible.
-                        // dispose();
+                    // Ignore reset.
+                    if (value == JOptionPane.UNINITIALIZED_VALUE) {
+                        return;
                     }
+
+                    // Reset the JOptionPane's value.
+                    // If you don't do this, then if the user
+                    // presses the same button next time, no
+                    // property change event will be fired.
+                    // Note that this seems to trigger the listener
+                    // again, so the previous line is essential.
+                    _optionPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
+
+                    if (value instanceof String) {
+                        // A button was pressed...
+                        _buttonPressed = (String) value;
+                    }
+
+                    // Close the window.
+                    setVisible(false);
+
+                    // Take any action that might be associated with
+                    // window closing.
+                    _handleClosing();
+
+                    // Java's AWT yields random results if we do this.
+                    // And anyway, it doesn't work.  Components still don't
+                    // have their ComponentListener methods called to indicate
+                    // that they have become invisible.
+                    // dispose();
                 }
-            });
+            }
+        });
 
         getContentPane().add(_optionPane);
         pack();
@@ -226,30 +268,31 @@ public class ComponentDialog extends JDialog {
         // Catch closing events so that components are notified if
         // the window manager is used to close the window.
         addWindowListener(new WindowAdapter() {
-                public void windowClosing(WindowEvent e) {
-                    _handleClosing();
-                }
-            });
+            public void windowClosing(WindowEvent e) {
+                _handleClosing();
+            }
+        });
 
         // Make the window visible.
         setVisible(true);
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         public methods                    ////
-
-    /** Return the label of the button that triggered closing the
-     *  dialog, or an empty string if none.
-     *  @return The label of the button pressed.
+    /**
+     * Return the label of the button that triggered closing the
+     * dialog, or an empty string if none.
+     *
+     * @return The label of the button pressed.
      */
     public String buttonPressed() {
         return _buttonPressed;
     }
 
-    /** Change the message that was specified in the constructor to
-     *  read as specified.  If no message was specified in the constructor,
-     *  then do nothing.
-     *  @param message The new message.
+    /**
+     * Change the message that was specified in the constructor to
+     * read as specified.  If no message was specified in the constructor,
+     * then do nothing.
+     *
+     * @param message The new message.
      */
     public void setMessage(String message) {
         if (_messageArea != null) {
@@ -257,13 +300,11 @@ public class ComponentDialog extends JDialog {
         }
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected methods                 ////
-
-    /** If the contents of this dialog implements the CloseListener
-     *  interface, then notify it that the window has closed, unless
-     *  notification has already been done (it is guaranteed to be done
-     *  only once).
+    /**
+     * If the contents of this dialog implements the CloseListener
+     * interface, then notify it that the window has closed, unless
+     * notification has already been done (it is guaranteed to be done
+     * only once).
      */
     protected void _handleClosing() {
         if ((contents instanceof CloseListener) && !_doneHandleClosing) {
@@ -271,38 +312,4 @@ public class ComponentDialog extends JDialog {
             ((CloseListener) contents).windowClosed(this, _buttonPressed);
         }
     }
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         public variables                  ////
-
-    /** The component contained by this dialog.
-     */
-    public Component contents;
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected variables               ////
-
-    /** The label of the button pushed to dismiss the dialog. */
-    protected String _buttonPressed = "";
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         private variables                 ////
-
-    /** Button labels. */
-    private static String[] _buttons;
-
-    /** Default button labels. */
-    private static String[] _defaultButtons = {
-        "OK",
-        "Cancel"
-    };
-
-    /** Indicator that we have notified of window closing. */
-    private boolean _doneHandleClosing = false;
-
-    /** The pane with the buttons. */
-    private JOptionPane _optionPane;
-
-    /** The container for messages. */
-    private JTextArea _messageArea;
 }

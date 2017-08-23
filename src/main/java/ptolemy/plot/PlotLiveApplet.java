@@ -34,33 +34,37 @@ package ptolemy.plot;
 //// PlotLiveApplet
 
 /**
-   An Applet for the PlotLive class.  Derived classes should redefine
-   newPlot() to return a concrete instance of PlotLive.
-
-   @author Edward A. Lee, Christopher Hylands
-   @version $Id: PlotLiveApplet.java,v 1.29 2005/04/25 22:52:07 cxh Exp $
-   @since Ptolemy II 0.2
-   @Pt.ProposedRating Yellow (cxh)
-   @Pt.AcceptedRating Yellow (cxh)
-*/
+ * An Applet for the PlotLive class.  Derived classes should redefine
+ * newPlot() to return a concrete instance of PlotLive.
+ *
+ * @author Edward A. Lee, Christopher Hylands
+ * @version $Id: PlotLiveApplet.java,v 1.29 2005/04/25 22:52:07 cxh Exp $
+ * @Pt.ProposedRating Yellow (cxh)
+ * @Pt.AcceptedRating Yellow (cxh)
+ * @since Ptolemy II 0.2
+ */
 public class PlotLiveApplet extends PlotApplet {
-    /** Return a string describing this applet.
-     *  @return A description of the applet.
+    /**
+     * Return a string describing this applet.
+     *
+     * @return A description of the applet.
      */
     public String getAppletInfo() {
         return "PlotLiveApplet " + PlotBox.PTPLOT_RELEASE
-            + " : Demo of PlotLive.\n" + "By: Edward A. Lee\n"
-            + "    Christopher Hylands\n"
-            + "($Id: PlotLiveApplet.java,v 1.29 2005/04/25 22:52:07 cxh Exp $)";
+                + " : Demo of PlotLive.\n" + "By: Edward A. Lee\n"
+                + "    Christopher Hylands\n"
+                + "($Id: PlotLiveApplet.java,v 1.29 2005/04/25 22:52:07 cxh Exp $)";
     }
 
-    /** Start the plot thread.
+    /**
+     * Start the plot thread.
      */
     public void start() {
         ((PlotLive) plot()).start();
     }
 
-    /** Stop the plot thread.
+    /**
+     * Stop the plot thread.
      */
     public void stop() {
         ((PlotLive) plot()).stop();

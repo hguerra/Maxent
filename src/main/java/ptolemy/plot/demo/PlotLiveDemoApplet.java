@@ -37,26 +37,29 @@ import ptolemy.plot.PlotLiveApplet;
 //// PlotLiveDemoApplet
 
 /**
-   An Applet that demonstrates the PlotLiveDemo class.
-
-   @author Edward A. Lee, Christopher Hylands
-   @version $Id: PlotLiveDemoApplet.java,v 1.42 2005/04/25 22:48:56 cxh Exp $
-   @since Ptolemy II 0.2
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-*/
+ * An Applet that demonstrates the PlotLiveDemo class.
+ *
+ * @author Edward A. Lee, Christopher Hylands
+ * @version $Id: PlotLiveDemoApplet.java,v 1.42 2005/04/25 22:48:56 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @since Ptolemy II 0.2
+ */
 public class PlotLiveDemoApplet extends PlotLiveApplet {
-    /** Return a string describing this applet.
-     *  @return A description of the applet.
+    /**
+     * Return a string describing this applet.
+     *
+     * @return A description of the applet.
      */
     public String getAppletInfo() {
         return "PlotLiveDemoApplet " + PlotBox.PTPLOT_RELEASE
-            + " : Demo of PlotLive.\n" + "By: Edward A. Lee\n"
-            + "    Christopher Hylands\n"
-            + "($Id: PlotLiveDemoApplet.java,v 1.42 2005/04/25 22:48:56 cxh Exp $)";
+                + " : Demo of PlotLive.\n" + "By: Edward A. Lee\n"
+                + "    Christopher Hylands\n"
+                + "($Id: PlotLiveDemoApplet.java,v 1.42 2005/04/25 22:48:56 cxh Exp $)";
     }
 
-    /** Create a new Plot object to operate on.
+    /**
+     * Create a new Plot object to operate on.
      */
     public PlotBox newPlot() {
         return new PlotLiveDemo();

@@ -33,21 +33,23 @@ import java.util.EventListener;
 //// QueryListener
 
 /**
-   Listener interface for changes in the query box.
-
-   @author Edward A. Lee
-   @version $Id: QueryListener.java,v 1.13 2005/03/01 01:00:35 cxh Exp $
-   @since Ptolemy II 0.3
-   @Pt.ProposedRating Red (eal)
-   @Pt.AcceptedRating Red (eal)
-*/
+ * Listener interface for changes in the query box.
+ *
+ * @author Edward A. Lee
+ * @version $Id: QueryListener.java,v 1.13 2005/03/01 01:00:35 cxh Exp $
+ * @Pt.ProposedRating Red (eal)
+ * @Pt.AcceptedRating Red (eal)
+ * @since Ptolemy II 0.3
+ */
 public interface QueryListener extends EventListener {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
 
-    /** Called to notify that one of the entries has changed.
-     *  The name of the entry is passed as an argument.
-     *  @param name The name of the entry.
+    /**
+     * Called to notify that one of the entries has changed.
+     * The name of the entry is passed as an argument.
+     *
+     * @param name The name of the entry.
      */
     public abstract void changed(String name);
 }

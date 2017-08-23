@@ -24,63 +24,73 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package density;
 
 import java.io.*;
-import java.util.*;
-import java.util.*;
+import java.util.Vector;
 
 /**
-* A class for handling Windows-style INI files. The file format is as 
-* follows:  <dl>
-*<dd>   [subject]       - anything beginning with [ and ending with ] is a subject 
-*<dd>   ;comment        - anything beginning with a ; is a comment 
-*<dd>   variable=value  - anything of the format string=string is an assignment 
-*<dd>   comment         - anything that doesn't match any of the above is a comment 
-*
-* @author Steve DeGroof 
-* @author <A HREF="http://www.mindspring.com/~degroof"><I>http://www.mindspring.com/~degroof</A></I>
-* 
-* @author ISMPified by Jeff Dillon
-* @version 2.0
-* 
-* Original non-ismpified code at
-* http://degroof.home.mindspring.com/java/
-* 
-* ISMPifying involved simply making all the methods throw 
-* IOExceptions instead of doing System.err's for errors.
-*
-* @author Steven Phillips
-* Made subjects and fields case insensitive, and getvalue(..) call trim()
-* 
-*/
+ * A class for handling Windows-style INI files. The file format is as
+ * follows:  <dl>
+ * <dd>   [subject]       - anything beginning with [ and ending with ] is a subject
+ * <dd>   ;comment        - anything beginning with a ; is a comment
+ * <dd>   variable=value  - anything of the format string=string is an assignment
+ * <dd>   comment         - anything that doesn't match any of the above is a comment
+ *
+ * @author Steve DeGroof
+ * @author <A HREF="http://www.mindspring.com/~degroof"><I>http://www.mindspring.com/~degroof</A></I>
+ * @author ISMPified by Jeff Dillon
+ * @author Steven Phillips
+ * Made subjects and fields case insensitive, and getvalue(..) call trim()
+ * @version 2.0
+ * <p>
+ * Original non-ismpified code at
+ * http://degroof.home.mindspring.com/java/
+ * <p>
+ * ISMPifying involved simply making all the methods throw
+ * IOExceptions instead of doing System.err's for errors.
+ */
 
 public class GetIniValueParser extends Object {
-    /**Actual text lines of the file stored in a vector.*/
+    /**
+     * Actual text lines of the file stored in a vector.
+     */
     protected Vector lines;
-    /**A vector of all subjects*/
+    /**
+     * A vector of all subjects
+     */
     protected Vector subjects;
-    /**A vector of variable name vectors grouped by subject*/
+    /**
+     * A vector of variable name vectors grouped by subject
+     */
     protected Vector variables;
-    /**A vector of variable value vectors grouped by subject*/
+    /**
+     * A vector of variable value vectors grouped by subject
+     */
     protected Vector values;
-    /**Name of the file*/
+    /**
+     * Name of the file
+     */
     protected String fileName;
-    /**If true, INI file will be saved every time a value is changed. Defaults to false*/
+    /**
+     * If true, INI file will be saved every time a value is changed. Defaults to false
+     */
     protected boolean saveOnChange = false;
 
     /**
-    * Creates an INI file object using the specified name
-    * If the named file doesn't exist, create one
-    * @param name the name of the file
-    */
+     * Creates an INI file object using the specified name
+     * If the named file doesn't exist, create one
+     *
+     * @param name the name of the file
+     */
     public GetIniValueParser(String name) throws IOException {
         this(name, false);
     }
 
     /**
-    * Creates an INI file object using the specified name
-    * If the named file doesn't exist, create one
-    * @param name the name of the file
-    * @param saveOnSet save file whenever a value is set
-    */
+     * Creates an INI file object using the specified name
+     * If the named file doesn't exist, create one
+     *
+     * @param name      the name of the file
+     * @param saveOnSet save file whenever a value is set
+     */
     public GetIniValueParser(String name, boolean save) throws IOException {
         saveOnChange = save;
         fileName = name;
@@ -93,8 +103,8 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * Loads and parses the INI file. Can be used to reload from file.
-    */
+     * Loads and parses the INI file. Can be used to reload from file.
+     */
     public void loadFile() throws IOException {
         //reset all vectors
         lines = new Vector();
@@ -104,7 +114,7 @@ public class GetIniValueParser extends Object {
         //open the file
         try {
             DataInputStream ini =
-                new DataInputStream(new BufferedInputStream(new FileInputStream(fileName)));
+                    new DataInputStream(new BufferedInputStream(new FileInputStream(fileName)));
             String line = "";
             //read all the lines in
             while (true) {
@@ -121,8 +131,8 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * Create a new INI file.
-    */
+     * Create a new INI file.
+     */
     protected boolean createFile() throws IOException {
         try {
             DataOutputStream newFile = new DataOutputStream(new FileOutputStream(fileName));
@@ -135,19 +145,19 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * Reads lines, filling in subjects, variables and values.
-    */
+     * Reads lines, filling in subjects, variables and values.
+     */
     protected void parseLines() throws IOException {
         String currentLine = null; //current line being parsed
         String currentSubject = null; //the last subject found
         for (int i = 0; i < lines.size(); i++) //parse all lines
-            {
+        {
             currentLine = (String) lines.elementAt(i);
             if (isaSubject(currentLine)) //if line is a subject, set currentSubject
-                {
-		    currentSubject = currentLine.substring(1, currentLine.length() - 1).toLowerCase();
-		} else if (isanAssignment(currentLine)) //if line is an assignment, add it
-                {
+            {
+                currentSubject = currentLine.substring(1, currentLine.length() - 1).toLowerCase();
+            } else if (isanAssignment(currentLine)) //if line is an assignment, add it
+            {
                 String assignment = currentLine;
                 addAssignment(currentSubject, assignment);
             }
@@ -155,8 +165,8 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * Adds and assignment (i.e. "variable=value") to a subject.
-    */
+     * Adds and assignment (i.e. "variable=value") to a subject.
+     */
     protected boolean addAssignment(String subject, String assignment) throws IOException {
         String value;
         String variable;
@@ -170,14 +180,15 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * Sets a specific subject/variable combination the given value. If the subject
-    * doesn't exist, create it. If the variable doesn't exist, create it. If 
-    * saveOnChange is true, save the file;
-    * @param subject the subject heading (e.g. "Widget Settings")
-    * @param variable the variable name (e.g. "Color")
-    * @param value the value of the variable (e.g. "green")
-    * @return true if successful
-    */
+     * Sets a specific subject/variable combination the given value. If the subject
+     * doesn't exist, create it. If the variable doesn't exist, create it. If
+     * saveOnChange is true, save the file;
+     *
+     * @param subject  the subject heading (e.g. "Widget Settings")
+     * @param variable the variable name (e.g. "Color")
+     * @param value    the value of the variable (e.g. "green")
+     * @return true if successful
+     */
     public boolean setValue(String subject, String variable, String value) throws IOException {
         boolean result = addValue(subject, variable, value, true);
         if (saveOnChange)
@@ -186,16 +197,17 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * Sets a specific subject/variable combination the given value. If the subject
-    * doesn't exist, create it. If the variable doesn't exist, create it.
-    * @param subject the subject heading (e.g. "Widget Settings")
-    * @param variable the variable name (e.g. "Color")
-    * @param value the value of the variable (e.g. "green")
-    * @param addToLines add the information to the lines vector
-    * @return true if successful
-    */
+     * Sets a specific subject/variable combination the given value. If the subject
+     * doesn't exist, create it. If the variable doesn't exist, create it.
+     *
+     * @param subject    the subject heading (e.g. "Widget Settings")
+     * @param variable   the variable name (e.g. "Color")
+     * @param value      the value of the variable (e.g. "green")
+     * @param addToLines add the information to the lines vector
+     * @return true if successful
+     */
     protected boolean addValue(String subject, String variable, String value, boolean addToLines)
-        throws IOException {
+            throws IOException {
         //if no subject, quit
         if ((subject == null) || (subject.length() == 0))
             return false;
@@ -230,20 +242,22 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * does the line represent a subject?
-    * @param line a string representing a line from an INI file
-    * @return true if line is a subject
-    */
+     * does the line represent a subject?
+     *
+     * @param line a string representing a line from an INI file
+     * @return true if line is a subject
+     */
     protected boolean isaSubject(String line) {
         return (line.startsWith("[") && line.endsWith("]"));
     }
 
     /**
-    * set a line in the lines vector 
-    * @param subject the subject heading (e.g. "Widget Settings")
-    * @param variable the variable name (e.g. "Color")
-    * @param value the value of the variable (e.g. "green")
-    */
+     * set a line in the lines vector
+     *
+     * @param subject  the subject heading (e.g. "Widget Settings")
+     * @param variable the variable name (e.g. "Color")
+     * @param value    the value of the variable (e.g. "green")
+     */
     protected void setLine(String subject, String variable, String value) {
         //find the line containing the subject
         int subjectLine = findSubjectLine(subject);
@@ -264,11 +278,12 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * find the line containing a variable within a subject
-    * @param subject the subject heading (e.g. "Widget Settings")
-    * @param variable the variable name (e.g. "Color")
-    * @return the line number of the assignment, -1 if not found
-    */
+     * find the line containing a variable within a subject
+     *
+     * @param subject  the subject heading (e.g. "Widget Settings")
+     * @param variable the variable name (e.g. "Color")
+     * @return the line number of the assignment, -1 if not found
+     */
     protected int findAssignmentLine(String subject, String variable) {
         int start = findSubjectLine(subject);
         int end = endOfSubject(start);
@@ -276,12 +291,13 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * find the line containing a variable within a range of lines
-    * @param variable the variable name (e.g. "Color")
-    * @param start the start of the range (inclusive)
-    * @param end the end of the range (exclusive)
-    * @return the line number of the assignment, -1 if not found
-    */
+     * find the line containing a variable within a range of lines
+     *
+     * @param variable the variable name (e.g. "Color")
+     * @param start    the start of the range (inclusive)
+     * @param end      the end of the range (exclusive)
+     * @return the line number of the assignment, -1 if not found
+     */
     protected int findAssignmentBetween(String variable, int start, int end) {
         for (int i = start; i < end; i++) {
             if (((String) lines.elementAt(i)).startsWith(variable + "="))
@@ -291,18 +307,20 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * add a subject line to the end of the lines vector
-    * @param subject the subject heading (e.g. "Widget Settings")
-    */
+     * add a subject line to the end of the lines vector
+     *
+     * @param subject the subject heading (e.g. "Widget Settings")
+     */
     protected void addSubjectLine(String subject) {
         lines.addElement("[" + subject + "]");
     }
 
     /**
-    * find a subject line within the lines vector
-    * @param subject the subject heading (e.g. "Widget Settings")
-    * @return the line number of the subject, -1 if not found
-    */
+     * find a subject line within the lines vector
+     *
+     * @param subject the subject heading (e.g. "Widget Settings")
+     * @return the line number of the subject, -1 if not found
+     */
     protected int findSubjectLine(String subject) {
         String line;
         String formattedSubject = "[" + subject + "]";
@@ -315,11 +333,12 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * find the line number which is 1 past the last assignment in a subject
-    * starting at a given line
-    * @param start the line number at which to start looking
-    * @return the line number of the last assignment + 1
-    */
+     * find the line number which is 1 past the last assignment in a subject
+     * starting at a given line
+     *
+     * @param start the line number at which to start looking
+     * @return the line number of the last assignment + 1
+     */
     protected int endOfSubject(int start) {
         int endIndex = start + 1;
         if (start >= lines.size())
@@ -334,10 +353,11 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * does the line represent an assignment?
-    * @param line a string representing a line from an INI file
-    * @return true if line is an assignment
-    */
+     * does the line represent an assignment?
+     *
+     * @param line a string representing a line from an INI file
+     * @return true if line is an assignment
+     */
     protected boolean isanAssignment(String line) {
         if ((line.indexOf("=") != -1) && (!line.startsWith(";")))
             return true;
@@ -346,17 +366,18 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * get a copy of the lines vector
-    */
+     * get a copy of the lines vector
+     */
     public Vector getLines() {
         return (Vector) lines.clone();
     }
 
     /**
-    * get a vector containing all variables in a subject
-    * @param subject the subject heading (e.g. "Widget Settings")
-    * @return a list of variables, empty vector if subject not found
-    */
+     * get a vector containing all variables in a subject
+     *
+     * @param subject the subject heading (e.g. "Widget Settings")
+     * @return a list of variables, empty vector if subject not found
+     */
     public String[] getVariables(String subject) {
         String[] v;
         int index = subjects.indexOf(subject);
@@ -372,9 +393,10 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * get an array containing all subjects
-    * @return a list of subjects
-    */
+     * get an array containing all subjects
+     *
+     * @return a list of subjects
+     */
     public String[] getSubjects() {
         String[] s = new String[subjects.size()];
         subjects.copyInto(s);
@@ -382,14 +404,15 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * get the value of a variable within a subject
-    * @param subject the subject heading (e.g. "Widget Settings")
-    * @param variable the variable name (e.g. "Color")
-    * @return the value of the variable (e.g. "green"), empty string if not found
-    */
+     * get the value of a variable within a subject
+     *
+     * @param subject  the subject heading (e.g. "Widget Settings")
+     * @param variable the variable name (e.g. "Color")
+     * @return the value of the variable (e.g. "green"), empty string if not found
+     */
     public String getValue(String subject, String variable) {
-	subject = subject.toLowerCase();
-	variable = variable.toLowerCase();
+        subject = subject.toLowerCase();
+        variable = variable.toLowerCase();
         int subjectIndex = subjects.indexOf(subject);
         if (subjectIndex == -1)
             return "";
@@ -403,10 +426,11 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * delete variable within a subject
-    * @param subject the subject heading (e.g. "Widget Settings")
-    * @param variable the variable name (e.g. "Color")
-    */
+     * delete variable within a subject
+     *
+     * @param subject  the subject heading (e.g. "Widget Settings")
+     * @param variable the variable name (e.g. "Color")
+     */
     public void deleteValue(String subject, String variable) throws IOException {
         int subjectIndex = subjects.indexOf(subject);
         if (subjectIndex == -1)
@@ -435,9 +459,10 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * delete a subject and all its variables
-    * @param subject the subject heading (e.g. "Widget Settings")
-    */
+     * delete a subject and all its variables
+     *
+     * @param subject the subject heading (e.g. "Widget Settings")
+     */
     public void deleteSubject(String subject) throws IOException {
         int subjectIndex = subjects.indexOf(subject);
         if (subjectIndex == -1)
@@ -457,15 +482,15 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * save the lines vector back to the INI file
-    */
+     * save the lines vector back to the INI file
+     */
     public void saveFile() throws IOException {
         try {
             DataOutputStream outFile =
-                new DataOutputStream(new BufferedOutputStream(new FileOutputStream(fileName)));
+                    new DataOutputStream(new BufferedOutputStream(new FileOutputStream(fileName)));
             for (int i = 0; i < lines.size(); i++) {
                 outFile.writeBytes(
-                    (String) (lines.elementAt(i)) + System.getProperty("line.separator"));
+                        (String) (lines.elementAt(i)) + System.getProperty("line.separator"));
             }
             outFile.close();
         } catch (IOException e) {
@@ -474,8 +499,8 @@ public class GetIniValueParser extends Object {
     }
 
     /**
-    * clean up
-    */
+     * clean up
+     */
     protected void finalize() throws IOException {
         saveFile();
     }

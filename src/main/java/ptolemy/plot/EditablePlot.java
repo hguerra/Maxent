@@ -27,14 +27,8 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
+import java.awt.*;
+import java.awt.event.*;
 import java.util.Enumeration;
 import java.util.Stack;
 import java.util.Vector;
@@ -44,46 +38,70 @@ import java.util.Vector;
 //// EditablePlot
 
 /**
-   This extension of Plot permits interactive modification of plotted
-   data, one dataset at a time.  By default, you can modify dataset
-   number zero (the first one given).  To change this default, call
-   setEditable().  To edit a plot, use the right mouse button.
-   Click and drag to the left to trace out new values for the data.
-   To read back the modified data, use getData().  To undo a change to
-   the data, type Control-Z.  To redo the change, type Control-Y.
-   The undo history is infinite.
-   <p>
-   The style of editing is very particular.  This class assumes the data
-   specify a function of <i>x</i>.  I.e., there there is exactly one
-   <i>y</i> value for every <i>x</i> value.  Thus, with the right mouse
-   button, you are allowed to trace out new <i>y</i> values
-   starting with some leftmost <i>x</i> value.  You can only trace
-   values to the right.  This feature makes it easy to trace values
-   with discontinuities.  Just start at the left, and drag to the right
-   to the point of the discontinuity, then drag to the left,
-   then right again.  You will have to try it...
-   Notice that this style of editing probably does not make sense with
-   error bars, since there is no mechanism for editing the error bars.
-   <p>
-   To be able to modify the data in a dataset, of course, there must
-   be data in the dataset.  Thus, you should create a dataset (for
-   example by calling addPoint()) before editing it.  Only the visible
-   part of the dataset can be edited (that is, the portion of the dataset
-   along the visible part of the horizontal axis).  If you zoom in, then,
-   you can edit particular points more precisely.
-   <p>
-   To be notified when the user sketches a new signal, create an
-   object that implements the EditListener interface and add that
-   listener using addEditListener().
-
-   @author Edward A. Lee
-   @version $Id: EditablePlot.java,v 1.34 2005/04/25 22:49:06 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating Red (cxh)
-   @Pt.AcceptedRating Red (cxh)
-*/
+ * This extension of Plot permits interactive modification of plotted
+ * data, one dataset at a time.  By default, you can modify dataset
+ * number zero (the first one given).  To change this default, call
+ * setEditable().  To edit a plot, use the right mouse button.
+ * Click and drag to the left to trace out new values for the data.
+ * To read back the modified data, use getData().  To undo a change to
+ * the data, type Control-Z.  To redo the change, type Control-Y.
+ * The undo history is infinite.
+ * <p>
+ * The style of editing is very particular.  This class assumes the data
+ * specify a function of <i>x</i>.  I.e., there there is exactly one
+ * <i>y</i> value for every <i>x</i> value.  Thus, with the right mouse
+ * button, you are allowed to trace out new <i>y</i> values
+ * starting with some leftmost <i>x</i> value.  You can only trace
+ * values to the right.  This feature makes it easy to trace values
+ * with discontinuities.  Just start at the left, and drag to the right
+ * to the point of the discontinuity, then drag to the left,
+ * then right again.  You will have to try it...
+ * Notice that this style of editing probably does not make sense with
+ * error bars, since there is no mechanism for editing the error bars.
+ * <p>
+ * To be able to modify the data in a dataset, of course, there must
+ * be data in the dataset.  Thus, you should create a dataset (for
+ * example by calling addPoint()) before editing it.  Only the visible
+ * part of the dataset can be edited (that is, the portion of the dataset
+ * along the visible part of the horizontal axis).  If you zoom in, then,
+ * you can edit particular points more precisely.
+ * <p>
+ * To be notified when the user sketches a new signal, create an
+ * object that implements the EditListener interface and add that
+ * listener using addEditListener().
+ *
+ * @author Edward A. Lee
+ * @version $Id: EditablePlot.java,v 1.34 2005/04/25 22:49:06 cxh Exp $
+ * @Pt.ProposedRating Red (cxh)
+ * @Pt.AcceptedRating Red (cxh)
+ * @since Ptolemy II 0.4
+ */
 public class EditablePlot extends Plot {
-    /** Constructor.
+    // Call setXORMode with a hardwired color because
+    // _background does not work in an application,
+    // and _foreground does not work in an applet
+    private static final Color _editColor = Color.white;
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         public methods                    ////
+    ///////////////////////////////////////////////////////////////////
+    ////                         private variables                 ////
+    private int[] _editSpecX;
+    ///////////////////////////////////////////////////////////////////
+    ////                         private variables                 ////
+    private int[] _editSpecY;
+    private boolean[] _editSpecSet;
+    private int _currentEditX;
+    private int _currentEditY;
+    private int _dataset = 0;
+    // Stack for undo.
+    private Stack _undoStack = new Stack();
+    private Stack _redoStack = new Stack();
+    // Edit listeners.
+    private Vector _editListeners = null;
+
+    /**
+     * Constructor.
      */
     public EditablePlot() {
         super();
@@ -92,12 +110,11 @@ public class EditablePlot extends Plot {
         addKeyListener(new UndoListener());
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         public methods                    ////
-
-    /** Add a listener to be informed when the user modifies a data set.
-     *  @param listener The listener.
-     *  @see EditListener
+    /**
+     * Add a listener to be informed when the user modifies a data set.
+     *
+     * @param listener The listener.
+     * @see EditListener
      */
     public void addEditListener(EditListener listener) {
         if (_editListeners == null) {
@@ -111,11 +128,13 @@ public class EditablePlot extends Plot {
         _editListeners.addElement(listener);
     }
 
-    /** Get the data in the specified dataset. This is returned as
-     *  a two-dimensional array, where the first index specifies
-     *  X or Y data (index 0 or 1 respectively), and the second
-     *  index specifies the point.
-     *  @return The data in the specified dataset.
+    /**
+     * Get the data in the specified dataset. This is returned as
+     * a two-dimensional array, where the first index specifies
+     * X or Y data (index 0 or 1 respectively), and the second
+     * index specifies the point.
+     *
+     * @return The data in the specified dataset.
      */
     public double[][] getData(int dataset) {
         _checkDatasetIndex(dataset);
@@ -133,8 +152,9 @@ public class EditablePlot extends Plot {
         return result;
     }
 
-    /** Redo the latest signal editing operation that was undone by
-     *  calling undo(), if there was one.  Otherwise, do nothing.
+    /**
+     * Redo the latest signal editing operation that was undone by
+     * calling undo(), if there was one.  Otherwise, do nothing.
      */
     public void redo() {
         if (_redoStack.empty()) {
@@ -155,10 +175,12 @@ public class EditablePlot extends Plot {
         _notifyListeners(_dataset);
     }
 
-    /** Unregister a edit listener.  If the specified listener has not
-     *  been previously registered, then do nothing.
-     *  @param listener The listener to remove from the list of listeners
-     *   to which edit events are sent.
+    /**
+     * Unregister a edit listener.  If the specified listener has not
+     * been previously registered, then do nothing.
+     *
+     * @param listener The listener to remove from the list of listeners
+     *                 to which edit events are sent.
      */
     public void removeEditListener(EditListener listener) {
         if (_editListeners == null) {
@@ -168,10 +190,12 @@ public class EditablePlot extends Plot {
         _editListeners.removeElement(listener);
     }
 
-    /** Specify which dataset is editable. By default, if this method is
-     *  not called, dataset number zero is editable.  If you call this
-     *  method with a negative number, then no dataset will be editable.
-     *  @param dataset The editable dataset.
+    /**
+     * Specify which dataset is editable. By default, if this method is
+     * not called, dataset number zero is editable.  If you call this
+     * method with a negative number, then no dataset will be editable.
+     *
+     * @param dataset The editable dataset.
      */
     public void setEditable(int dataset) {
         if (dataset >= 0) {
@@ -181,8 +205,9 @@ public class EditablePlot extends Plot {
         _dataset = dataset;
     }
 
-    /** Undo the latest signal editing operation, if there was one.
-     *  Otherwise, do nothing.
+    /**
+     * Undo the latest signal editing operation, if there was one.
+     * Otherwise, do nothing.
      */
     public void undo() {
         if (_undoStack.empty()) {
@@ -254,7 +279,7 @@ public class EditablePlot extends Plot {
             // Only bother with points in visual range
             if ((pt.x >= _xMin) && (pt.x <= _xMax)) {
                 int index = (int) ((pt.x - _xMin) * _xscale)
-                    - (_lrx - _ulx - _editSpecX.length);
+                        - (_lrx - _ulx - _editSpecX.length);
 
                 if ((index >= 0) && (index < _editSpecX.length)) {
                     if (_editSpecSet[index]) {
@@ -425,30 +450,6 @@ public class EditablePlot extends Plot {
     }
 
     ///////////////////////////////////////////////////////////////////
-    ////                         private variables                 ////
-    private int[] _editSpecX;
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         private variables                 ////
-    private int[] _editSpecY;
-    private boolean[] _editSpecSet;
-    private int _currentEditX;
-    private int _currentEditY;
-    private int _dataset = 0;
-
-    // Call setXORMode with a hardwired color because
-    // _background does not work in an application,
-    // and _foreground does not work in an applet
-    private static final Color _editColor = Color.white;
-
-    // Stack for undo.
-    private Stack _undoStack = new Stack();
-    private Stack _redoStack = new Stack();
-
-    // Edit listeners.
-    private Vector _editListeners = null;
-
-    ///////////////////////////////////////////////////////////////////
     ////                         inner classes                     ////
     public class EditMouseListener implements MouseListener {
         public void mouseClicked(MouseEvent event) {
@@ -485,32 +486,34 @@ public class EditablePlot extends Plot {
     }
 
     public class UndoListener implements KeyListener {
+        private boolean _control = false;
+
         public void keyPressed(KeyEvent e) {
             int keycode = e.getKeyCode();
 
             switch (keycode) {
-            case KeyEvent.VK_CONTROL:
-                _control = true;
-                break;
+                case KeyEvent.VK_CONTROL:
+                    _control = true;
+                    break;
 
-            case KeyEvent.VK_Z:
+                case KeyEvent.VK_Z:
 
-                if (_control) {
-                    undo();
-                }
+                    if (_control) {
+                        undo();
+                    }
 
-                break;
+                    break;
 
-            case KeyEvent.VK_Y:
+                case KeyEvent.VK_Y:
 
-                if (_control) {
-                    redo();
-                }
+                    if (_control) {
+                        redo();
+                    }
 
-                break;
+                    break;
 
-            default:
-                // None
+                default:
+                    // None
             }
         }
 
@@ -518,12 +521,12 @@ public class EditablePlot extends Plot {
             int keycode = e.getKeyCode();
 
             switch (keycode) {
-            case KeyEvent.VK_CONTROL:
-                _control = false;
-                break;
+                case KeyEvent.VK_CONTROL:
+                    _control = false;
+                    break;
 
-            default:
-                // None
+                default:
+                    // None
             }
         }
 
@@ -531,7 +534,5 @@ public class EditablePlot extends Plot {
         // It always gets "unknown key code".
         public void keyTyped(KeyEvent e) {
         }
-
-        private boolean _control = false;
     }
 }

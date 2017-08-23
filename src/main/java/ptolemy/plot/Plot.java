@@ -41,11 +41,9 @@ package ptolemy.plot;
 // NOTE: There are quite a few subjective spacing parameters, all
 // given, unfortunately, in pixels.  This means that as resolutions
 // get better, this program may need to be adjusted.
-import java.awt.BasicStroke;
-import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
+
+import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -54,172 +52,271 @@ import java.net.URL;
 import java.util.Enumeration;
 import java.util.Vector;
 
-import javax.swing.JComponent;
-
 
 //////////////////////////////////////////////////////////////////////////
 //// Plot
 
 /**
-   A flexible signal plotter.  The plot can be configured and data can
-   be provided either through a file with commands or through direct
-   invocation of the public methods of the class.
-   <p>
-   When calling the public methods, in most cases the changes will not
-   be visible until paintComponent() is called.  To request that this
-   be done, call repaint().  One exception is addPoint(), which
-   makes the new point visible immediately if the plot is visible on
-   the screen and addPoint() is called from the event dispatching thread.
-   <p>
-   This base class supports a simple file syntax that has largely been
-   replaced by the XML-based PlotML syntax.  To read a file or a
-   URL in this older syntax, use the read() method.
-   This older syntax contains any number commands,
-   one per line.  Unrecognized commands and commands with syntax
-   errors are ignored.  Comments are denoted by a line starting with a
-   pound sign "#".  The recognized commands include those supported by
-   the base class, plus a few more.  The commands are case
-   insensitive, but are usually capitalized.  The number of data sets
-   to be plotted does not need to be specified.  Data sets are added as needed.
-   Each dataset can be optionally identified with
-   color (see the base class) or with unique marks.  The style of
-   marks used to denote a data point is defined by one of the following
-   commands:
-   <pre>
-   Marks: none
-   Marks: points
-   Marks: dots
-   Marks: various
-   Marks: pixels
-   </pre>
-   Here, "points" are small dots, while "dots" are larger.  If "various"
-   is specified, then unique marks are used for the first ten data sets,
-   and then recycled. If "pixels" are specified, then each point is
-   drawn as one pixel.
-   Using no marks is useful when lines connect the points in a plot,
-   which is done by default.  However, if persistence is set, then you
-   may want to choose "pixels" because the lines may overlap, resulting
-   in annoying gaps in the drawn line.
-   If the above directive appears before any DataSet directive, then it
-   specifies the default for all data sets.  If it appears after a DataSet
-   directive, then it applies only to that data set.
-   <p>
-   To disable connecting lines, use:
-   <pre>
-   Lines: off
-   </pre>
-   To reenable them, use
-   <pre>
-   Lines: on
-   </pre>
-   You can also specify "impulses", which are lines drawn from a plotted point
-   down to the x axis.  Plots with impulses are often called "stem plots."
-   These are off by default, but can be turned on with the
-   command:
-   <pre>
-   Impulses: on
-   </pre>
-   or back off with the command
-   <pre>
-   Impulses: off
-   </pre>
-   If that command appears before any DataSet directive, then the command
-   applies to all data sets.  Otherwise, it applies only to the current data
-   set.
-   To create a bar graph, turn off lines and use any of the following commands:
-   <pre>
-   Bars: on
-   Bars: <i>width</i>
-   Bars: <i>width, offset</i>
-   </pre>
-   The <i>width</i> is a real number specifying the width of the bars
-   in the units of the x axis.  The <i>offset</i> is a real number
-   specifying how much the bar of the <i>i</i><sup>th</sup> data set
-   is offset from the previous one.  This allows bars to "peek out"
-   from behind the ones in front.  Note that the frontmost data set
-   will be the first one.  To turn off bars, use
-   <pre>
-   Bars: off
-   </pre>
-   To specify data to be plotted, start a data set with the following command:
-   <pre>
-   DataSet: <i>string</i>
-   </pre>
-   Here, <i>string</i> is a label that will appear in the legend.
-   It is not necessary to enclose the string in quotation marks.
-   To start a new dataset without giving it a name, use:
-   <pre>
-   DataSet:
-   </pre>
-   In this case, no item will appear in the legend.
-   New datasets are plotted <i>behind</i> the previous ones.
-   If the following directive occurs:
-   <pre>
-   ReuseDataSets: on
-   </pre>
-   Then datasets with the same name will be merged.  This makes it
-   easier to combine multiple datafiles that contain the same datasets
-   into one file.  By default, this capability is turned off, so
-   datasets with the same name are not merged.
-   The data itself is given by a sequence of commands with one of the
-   following forms:
-   <pre>
-   <i>x</i>, <i>y</i>
-   draw: <i>x</i>, <i>y</i>
-   move: <i>x</i>, <i>y</i>
-   <i>x</i>, <i>y</i>, <i>yLowErrorBar</i>, <i>yHighErrorBar</i>
-   draw: <i>x</i>, <i>y</i>, <i>yLowErrorBar</i>, <i>yHighErrorBar</i>
-   move: <i>x</i>, <i>y</i>, <i>yLowErrorBar</i>, <i>yHighErrorBar</i>
-   </pre>
-   The "draw" command is optional, so the first two forms are equivalent.
-   The "move" command causes a break in connected points, if lines are
-   being drawn between points. The numbers <i>x</i> and <i>y</i> are
-   arbitrary numbers as supported by the Double parser in Java.
-   If there are four numbers, then the last two numbers are assumed to
-   be the lower and upper values for error bars.
-   The numbers can be separated by commas, spaces or tabs.
-   <p>Some of the methods, such as those that add points a plot, are
-   executed in the event thread, possibly some time after they are called.
-   If they are called from a thread different from the event thread,
-   then the order in which changes to the plot take effect may be
-   surprising.  We recommend that any code you write that changes
-   the plot in visible ways be executed in the event thread. You
-   can accomplish this using the following template:
-   <pre>
-   Runnable doAction = new Runnable() {
-   public void run() {
-   ... make changes here (e.g. setMarksStyle()) ...
-   }
-   };
-   plot.deferIfNecessary(doAction);
-   </pre>
-   <p>
-   This plotter has some <A NAME="ptplot limitations">limitations</a>:
-   <ul>
-   <li> If you zoom in far enough, the plot becomes unreliable.
-   In particular, if the total extent of the plot is more than
-   2<sup>32</sup> times extent of the visible area, quantization
-   errors can result in displaying points or lines.
-   Note that 2<sup>32</sup> is over 4 billion.
-   <li> The limitations of the log axis facility are listed in
-   the <code>_gridInit()</code> method in the PlotBox class.
-   </ul>
-
-   @author Edward A. Lee, Christopher Hylands
-   @version $Id: Plot.java,v 1.233 2005/04/25 22:52:05 cxh Exp $
-   @since Ptolemy II 0.2
-   @Pt.ProposedRating Yellow (cxh)
-   @Pt.AcceptedRating Yellow (cxh)
-*/
+ * A flexible signal plotter.  The plot can be configured and data can
+ * be provided either through a file with commands or through direct
+ * invocation of the public methods of the class.
+ * <p>
+ * When calling the public methods, in most cases the changes will not
+ * be visible until paintComponent() is called.  To request that this
+ * be done, call repaint().  One exception is addPoint(), which
+ * makes the new point visible immediately if the plot is visible on
+ * the screen and addPoint() is called from the event dispatching thread.
+ * <p>
+ * This base class supports a simple file syntax that has largely been
+ * replaced by the XML-based PlotML syntax.  To read a file or a
+ * URL in this older syntax, use the read() method.
+ * This older syntax contains any number commands,
+ * one per line.  Unrecognized commands and commands with syntax
+ * errors are ignored.  Comments are denoted by a line starting with a
+ * pound sign "#".  The recognized commands include those supported by
+ * the base class, plus a few more.  The commands are case
+ * insensitive, but are usually capitalized.  The number of data sets
+ * to be plotted does not need to be specified.  Data sets are added as needed.
+ * Each dataset can be optionally identified with
+ * color (see the base class) or with unique marks.  The style of
+ * marks used to denote a data point is defined by one of the following
+ * commands:
+ * <pre>
+ * Marks: none
+ * Marks: points
+ * Marks: dots
+ * Marks: various
+ * Marks: pixels
+ * </pre>
+ * Here, "points" are small dots, while "dots" are larger.  If "various"
+ * is specified, then unique marks are used for the first ten data sets,
+ * and then recycled. If "pixels" are specified, then each point is
+ * drawn as one pixel.
+ * Using no marks is useful when lines connect the points in a plot,
+ * which is done by default.  However, if persistence is set, then you
+ * may want to choose "pixels" because the lines may overlap, resulting
+ * in annoying gaps in the drawn line.
+ * If the above directive appears before any DataSet directive, then it
+ * specifies the default for all data sets.  If it appears after a DataSet
+ * directive, then it applies only to that data set.
+ * <p>
+ * To disable connecting lines, use:
+ * <pre>
+ * Lines: off
+ * </pre>
+ * To reenable them, use
+ * <pre>
+ * Lines: on
+ * </pre>
+ * You can also specify "impulses", which are lines drawn from a plotted point
+ * down to the x axis.  Plots with impulses are often called "stem plots."
+ * These are off by default, but can be turned on with the
+ * command:
+ * <pre>
+ * Impulses: on
+ * </pre>
+ * or back off with the command
+ * <pre>
+ * Impulses: off
+ * </pre>
+ * If that command appears before any DataSet directive, then the command
+ * applies to all data sets.  Otherwise, it applies only to the current data
+ * set.
+ * To create a bar graph, turn off lines and use any of the following commands:
+ * <pre>
+ * Bars: on
+ * Bars: <i>width</i>
+ * Bars: <i>width, offset</i>
+ * </pre>
+ * The <i>width</i> is a real number specifying the width of the bars
+ * in the units of the x axis.  The <i>offset</i> is a real number
+ * specifying how much the bar of the <i>i</i><sup>th</sup> data set
+ * is offset from the previous one.  This allows bars to "peek out"
+ * from behind the ones in front.  Note that the frontmost data set
+ * will be the first one.  To turn off bars, use
+ * <pre>
+ * Bars: off
+ * </pre>
+ * To specify data to be plotted, start a data set with the following command:
+ * <pre>
+ * DataSet: <i>string</i>
+ * </pre>
+ * Here, <i>string</i> is a label that will appear in the legend.
+ * It is not necessary to enclose the string in quotation marks.
+ * To start a new dataset without giving it a name, use:
+ * <pre>
+ * DataSet:
+ * </pre>
+ * In this case, no item will appear in the legend.
+ * New datasets are plotted <i>behind</i> the previous ones.
+ * If the following directive occurs:
+ * <pre>
+ * ReuseDataSets: on
+ * </pre>
+ * Then datasets with the same name will be merged.  This makes it
+ * easier to combine multiple datafiles that contain the same datasets
+ * into one file.  By default, this capability is turned off, so
+ * datasets with the same name are not merged.
+ * The data itself is given by a sequence of commands with one of the
+ * following forms:
+ * <pre>
+ * <i>x</i>, <i>y</i>
+ * draw: <i>x</i>, <i>y</i>
+ * move: <i>x</i>, <i>y</i>
+ * <i>x</i>, <i>y</i>, <i>yLowErrorBar</i>, <i>yHighErrorBar</i>
+ * draw: <i>x</i>, <i>y</i>, <i>yLowErrorBar</i>, <i>yHighErrorBar</i>
+ * move: <i>x</i>, <i>y</i>, <i>yLowErrorBar</i>, <i>yHighErrorBar</i>
+ * </pre>
+ * The "draw" command is optional, so the first two forms are equivalent.
+ * The "move" command causes a break in connected points, if lines are
+ * being drawn between points. The numbers <i>x</i> and <i>y</i> are
+ * arbitrary numbers as supported by the Double parser in Java.
+ * If there are four numbers, then the last two numbers are assumed to
+ * be the lower and upper values for error bars.
+ * The numbers can be separated by commas, spaces or tabs.
+ * <p>Some of the methods, such as those that add points a plot, are
+ * executed in the event thread, possibly some time after they are called.
+ * If they are called from a thread different from the event thread,
+ * then the order in which changes to the plot take effect may be
+ * surprising.  We recommend that any code you write that changes
+ * the plot in visible ways be executed in the event thread. You
+ * can accomplish this using the following template:
+ * <pre>
+ * Runnable doAction = new Runnable() {
+ * public void run() {
+ * ... make changes here (e.g. setMarksStyle()) ...
+ * }
+ * };
+ * plot.deferIfNecessary(doAction);
+ * </pre>
+ * <p>
+ * This plotter has some <A NAME="ptplot limitations">limitations</a>:
+ * <ul>
+ * <li> If you zoom in far enough, the plot becomes unreliable.
+ * In particular, if the total extent of the plot is more than
+ * 2<sup>32</sup> times extent of the visible area, quantization
+ * errors can result in displaying points or lines.
+ * Note that 2<sup>32</sup> is over 4 billion.
+ * <li> The limitations of the log axis facility are listed in
+ * the <code>_gridInit()</code> method in the PlotBox class.
+ * </ul>
+ *
+ * @author Edward A. Lee, Christopher Hylands
+ * @version $Id: Plot.java,v 1.233 2005/04/25 22:52:05 cxh Exp $
+ * @Pt.ProposedRating Yellow (cxh)
+ * @Pt.AcceptedRating Yellow (cxh)
+ * @since Ptolemy II 0.2
+ */
 public class Plot extends PlotBox {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
 
-    /** Add a legend (displayed at the upper right) for the specified
-     *  data set with the specified string.  Short strings generally
-     *  fit better than long strings.
-     *  @param dataset The dataset index.
-     *  @param legend The label for the dataset.
+    // Half of the length of the error bar horizontal leg length;
+    private static final int _ERRORBAR_LEG_LENGTH = 5;
+    // Maximum number of different marks
+    // NOTE: There are 11 colors in the base class.  Combined with 10
+    // marks, that makes 110 unique signal identities.
+    private static final int _MAX_MARKS = 10;
+    // A stroke of width 1.
+    private static final BasicStroke _lineStroke1 = new BasicStroke(1f,
+            BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND);
+    // A stroke of width 2.
+    private static final BasicStroke _lineStroke2 = new BasicStroke(2f,
+            BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND);
+    /**
+     * @serial The current dataset.
+     */
+    protected int _currentdataset = -1;
+    /**
+     * @serial A vector of datasets.
+     */
+    protected Vector _points = new Vector();
+    /**
+     * @serial An indicator of the marks style.  See _parseLine method for
+     * interpretation.
+     */
+    protected int _marks;
+    /**
+     * @serial Number of points to persist for.
+     */
+    private int _pointsPersistence = 0;
+    /**
+     * @serial Persistence in units of the horizontal axis.
+     */
+    private double _xPersistence = 0.0;
+    /**
+     * @serial True if this is a bar plot.
+     */
+    private boolean _bars = false;
+    /**
+     * @serial Width of a bar in x axis units.
+     */
+    private double barWidth = 0.5;
+    /**
+     * @serial Offset per dataset in x axis units.
+     */
+    private double _barOffset = 0.05;
+    /**
+     * @serial True if the points are connected.
+     */
+    private boolean _connected = true;
+    /**
+     * @serial True if this is an impulse plot.
+     */
+    private boolean _impulses = false;
+    /**
+     * @serial The highest data set used.
+     */
+    private int _maxDataset = -1;
+    /**
+     * @serial True if we saw 'reusedatasets: on' in the file.
+     */
+    private boolean _reuseDatasets = false;
+    /**
+     * @serial Is this the first datapoint in a set?
+     */
+    private boolean _firstInSet = true;
+    /**
+     * @serial Have we seen a DataSet line in the current data file?
+     */
+    private boolean _sawFirstDataSet = false;
+    /**
+     * @serial Give the radius of a point for efficiency.
+     */
+    private int _radius = 3;
+    /**
+     * @serial Give the diameter of a point for efficiency.
+     */
+    private int _diameter = 6;
+    /**
+     * @serial Information about the previously plotted point.
+     */
+    private Vector _prevx = new Vector();
+    /**
+     * @serial Information about the previously plotted point.
+     */
+    private Vector _prevy = new Vector();
+    /**
+     * @serial Flag indicating validity of _xBottom, _xTop,
+     * _yBottom, and _yTop.
+     */
+    private boolean _xyInvalid = true;
+    /**
+     * @serial Set by _drawPlot(), and reset by clear().
+     */
+    private boolean _showing = false;
+    /**
+     * @serial Format information on a per data set basis.
+     */
+    private Vector _formats = new Vector();
+
+    /**
+     * Add a legend (displayed at the upper right) for the specified
+     * data set with the specified string.  Short strings generally
+     * fit better than long strings.
+     *
+     * @param dataset The dataset index.
+     * @param legend  The label for the dataset.
      */
     public synchronized void addLegend(int dataset, String legend) {
         _checkDatasetIndex(dataset);
@@ -233,205 +330,249 @@ public class Plot extends PlotBox {
 
             if ((possibleLegend == null)
                     || ((possibleLegend != null)
-                            && !possibleLegend.equals(legend))) {
+                    && !possibleLegend.equals(legend))) {
                 super.addLegend(dataset, legend);
             }
         }
     }
 
-    /** In the specified data set, add the specified x, y point to the
-     *  plot.  Data set indices begin with zero.  If the data set
-     *  does not exist, create it.  The fourth argument indicates
-     *  whether the point should be connected by a line to the previous
-     *  point.  Regardless of the value of this argument, a line will not
-     *  drawn if either there has been no previous point for this dataset
-     *  or setConnected() has been called with a false argument.
-     *  <p>
-     *  In order to work well with swing and be thread safe, this method
-     *  actually defers execution to the event dispatch thread, where
-     *  all user interface actions are performed.  Thus, the point will
-     *  not be added immediately (unless you call this method from within
-     *  the event dispatch thread). All the methods that do this deferring
-     *  coordinate so that they are executed in the order that you
-     *  called them.
+    /**
+     * In the specified data set, add the specified x, y point to the
+     * plot.  Data set indices begin with zero.  If the data set
+     * does not exist, create it.  The fourth argument indicates
+     * whether the point should be connected by a line to the previous
+     * point.  Regardless of the value of this argument, a line will not
+     * drawn if either there has been no previous point for this dataset
+     * or setConnected() has been called with a false argument.
+     * <p>
+     * In order to work well with swing and be thread safe, this method
+     * actually defers execution to the event dispatch thread, where
+     * all user interface actions are performed.  Thus, the point will
+     * not be added immediately (unless you call this method from within
+     * the event dispatch thread). All the methods that do this deferring
+     * coordinate so that they are executed in the order that you
+     * called them.
      *
-     *  @param dataset The data set index.
-     *  @param x The X position of the new point.
-     *  @param y The Y position of the new point.
-     *  @param connected If true, a line is drawn to connect to the previous
-     *   point.
+     * @param dataset   The data set index.
+     * @param x         The X position of the new point.
+     * @param y         The Y position of the new point.
+     * @param connected If true, a line is drawn to connect to the previous
+     *                  point.
      */
     public synchronized void addPoint(final int dataset, final double x,
-            final double y, final boolean connected) {
+                                      final double y, final boolean connected) {
         Runnable doAddPoint = new Runnable() {
-                public void run() {
-                    _addPoint(dataset, x, y, 0, 0, connected, false);
-                }
-            };
+            public void run() {
+                _addPoint(dataset, x, y, 0, 0, connected, false);
+            }
+        };
 
         deferIfNecessary(doAddPoint);
     }
 
-    /** In the specified data set, add the specified x, y point to the
-     *  plot with error bars.  Data set indices begin with zero.  If
-     *  the dataset does not exist, create it.  yLowEB and
-     *  yHighEB are the lower and upper error bars.  The sixth argument
-     *  indicates whether the point should be connected by a line to
-     *  the previous point.
-     *  The new point will be made visible if the plot is visible
-     *  on the screen.  Otherwise, it will be drawn the next time the plot
-     *  is drawn on the screen.
-     *  This method is based on a suggestion by
-     *  Michael Altmann <michael@email.labmed.umn.edu>.
-     *  <p>
-     *  In order to work well with swing and be thread safe, this method
-     *  actually defers execution to the event dispatch thread, where
-     *  all user interface actions are performed.  Thus, the point will
-     *  not be added immediately (unless you call this method from within
-     *  the event dispatch thread).  All the methods that do this deferring
-     *  coordinate so that they are executed in the order that you
-     *  called them.
+    /**
+     * In the specified data set, add the specified x, y point to the
+     * plot with error bars.  Data set indices begin with zero.  If
+     * the dataset does not exist, create it.  yLowEB and
+     * yHighEB are the lower and upper error bars.  The sixth argument
+     * indicates whether the point should be connected by a line to
+     * the previous point.
+     * The new point will be made visible if the plot is visible
+     * on the screen.  Otherwise, it will be drawn the next time the plot
+     * is drawn on the screen.
+     * This method is based on a suggestion by
+     * Michael Altmann <michael@email.labmed.umn.edu>.
+     * <p>
+     * In order to work well with swing and be thread safe, this method
+     * actually defers execution to the event dispatch thread, where
+     * all user interface actions are performed.  Thus, the point will
+     * not be added immediately (unless you call this method from within
+     * the event dispatch thread).  All the methods that do this deferring
+     * coordinate so that they are executed in the order that you
+     * called them.
      *
-     *  @param dataset The data set index.
-     *  @param x The X position of the new point.
-     *  @param y The Y position of the new point.
-     *  @param yLowEB The low point of the error bar.
-     *  @param yHighEB The high point of the error bar.
-     *  @param connected If true, a line is drawn to connect to the previous
-     *   point.
+     * @param dataset   The data set index.
+     * @param x         The X position of the new point.
+     * @param y         The Y position of the new point.
+     * @param yLowEB    The low point of the error bar.
+     * @param yHighEB   The high point of the error bar.
+     * @param connected If true, a line is drawn to connect to the previous
+     *                  point.
      */
     public synchronized void addPointWithErrorBars(final int dataset,
-            final double x, final double y, final double yLowEB,
-            final double yHighEB, final boolean connected) {
+                                                   final double x, final double y, final double yLowEB,
+                                                   final double yHighEB, final boolean connected) {
         Runnable doAddPoint = new Runnable() {
-                public void run() {
-                    _addPoint(dataset, x, y, yLowEB, yHighEB, connected, true);
-                }
-            };
+            public void run() {
+                _addPoint(dataset, x, y, yLowEB, yHighEB, connected, true);
+            }
+        };
 
         deferIfNecessary(doAddPoint);
     }
 
-    /** Clear the plot of all data points.  If the argument is true, then
-     *  reset all parameters to their initial conditions, including
-     *  the persistence, plotting format, and axes formats.
-     *  For the change to take effect, you must call repaint().
-     *  @param format If true, clear the format controls as well.
-     *  <p>
-     *  In order to work well with swing and be thread safe, this method
-     *  actually defers execution to the event dispatch thread, where
-     *  all user interface actions are performed.  Thus, the clear will
-     *  not be executed immediately (unless you call this method from within
-     *  the event dispatch thread).  All the methods that do this deferring
-     *  coordinate so that they are executed in the order that you
-     *  called them.
+    /**
+     * Clear the plot of all data points.  If the argument is true, then
+     * reset all parameters to their initial conditions, including
+     * the persistence, plotting format, and axes formats.
+     * For the change to take effect, you must call repaint().
+     *
+     * @param format If true, clear the format controls as well.
+     *               <p>
+     *               In order to work well with swing and be thread safe, this method
+     *               actually defers execution to the event dispatch thread, where
+     *               all user interface actions are performed.  Thus, the clear will
+     *               not be executed immediately (unless you call this method from within
+     *               the event dispatch thread).  All the methods that do this deferring
+     *               coordinate so that they are executed in the order that you
+     *               called them.
      */
     public synchronized void clear(final boolean format) {
         Runnable doClear = new Runnable() {
-                public void run() {
-                    _clear(format);
-                }
-            };
+            public void run() {
+                _clear(format);
+            }
+        };
 
         deferIfNecessary(doClear);
     }
 
-    /** Clear the plot of data points in the specified dataset.
-     *  This calls repaint() to request an update of the display.
-     *  <p>
-     *  In order to work well with swing and be thread safe, this method
-     *  actually defers execution to the event dispatch thread, where
-     *  all user interface actions are performed.  Thus, the point will
-     *  not be added immediately (unless you call this method from within
-     *  the event dispatch thread).  If you call this method, the addPoint()
-     *  method, and the erasePoint() method in any order, they are assured
-     *  of being processed in the order that you called them.
+    /**
+     * Clear the plot of data points in the specified dataset.
+     * This calls repaint() to request an update of the display.
+     * <p>
+     * In order to work well with swing and be thread safe, this method
+     * actually defers execution to the event dispatch thread, where
+     * all user interface actions are performed.  Thus, the point will
+     * not be added immediately (unless you call this method from within
+     * the event dispatch thread).  If you call this method, the addPoint()
+     * method, and the erasePoint() method in any order, they are assured
+     * of being processed in the order that you called them.
      *
-     *  @param dataset The dataset to clear.
+     * @param dataset The dataset to clear.
      */
     public synchronized void clear(final int dataset) {
         Runnable doClear = new Runnable() {
-                public void run() {
-                    _clear(dataset);
-                }
-            };
+            public void run() {
+                _clear(dataset);
+            }
+        };
 
         deferIfNecessary(doClear);
     }
 
-    /** Erase the point at the given index in the given dataset.  If
-     *  lines are being drawn, also erase the line to the next points
-     *  (note: not to the previous point).  The point is not checked to
-     *  see whether it is in range, so care must be taken by the caller
-     *  to ensure that it is.
-     *  <p>
-     *  In order to work well with swing and be thread safe, this method
-     *  actually defers execution to the event dispatch thread, where
-     *  all user interface actions are performed.  Thus, the point will
-     *  not be erased immediately (unless you call this method from within
-     *  the event dispatch thread).  All the methods that do this deferring
-     *  coordinate so that they are executed in the order that you
-     *  called them.
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected methods                 ////
+
+    /**
+     * Erase the point at the given index in the given dataset.  If
+     * lines are being drawn, also erase the line to the next points
+     * (note: not to the previous point).  The point is not checked to
+     * see whether it is in range, so care must be taken by the caller
+     * to ensure that it is.
+     * <p>
+     * In order to work well with swing and be thread safe, this method
+     * actually defers execution to the event dispatch thread, where
+     * all user interface actions are performed.  Thus, the point will
+     * not be erased immediately (unless you call this method from within
+     * the event dispatch thread).  All the methods that do this deferring
+     * coordinate so that they are executed in the order that you
+     * called them.
      *
-     *  @param dataset The data set index.
-     *  @param index The index of the point to erase.
+     * @param dataset The data set index.
+     * @param index   The index of the point to erase.
      */
     public synchronized void erasePoint(final int dataset, final int index) {
         Runnable doErasePoint = new Runnable() {
-                public void run() {
-                    _erasePoint(dataset, index);
-                }
-            };
+            public void run() {
+                _erasePoint(dataset, index);
+            }
+        };
 
         deferIfNecessary(doErasePoint);
     }
 
-    /** Rescale so that the data that is currently plotted just fits.
-     *  This overrides the base class method to ensure that the protected
-     *  variables _xBottom, _xTop, _yBottom, and _yTop are valid.
-     *  This method calls repaint(), which eventually causes the display
-     *  to be updated.
-     *  <p>
-     *  In order to work well with swing and be thread safe, this method
-     *  actually defers execution to the event dispatch thread, where
-     *  all user interface actions are performed.  Thus, the fill will
-     *  not occur immediately (unless you call this method from within
-     *  the event dispatch thread).  All the methods that do this deferring
-     *  coordinate so that they are executed in the order that you
-     *  called them.
+    /**
+     * Rescale so that the data that is currently plotted just fits.
+     * This overrides the base class method to ensure that the protected
+     * variables _xBottom, _xTop, _yBottom, and _yTop are valid.
+     * This method calls repaint(), which eventually causes the display
+     * to be updated.
+     * <p>
+     * In order to work well with swing and be thread safe, this method
+     * actually defers execution to the event dispatch thread, where
+     * all user interface actions are performed.  Thus, the fill will
+     * not occur immediately (unless you call this method from within
+     * the event dispatch thread).  All the methods that do this deferring
+     * coordinate so that they are executed in the order that you
+     * called them.
      */
     public synchronized void fillPlot() {
         Runnable doFill = new Runnable() {
-                public void run() {
-                    _fillPlot();
-                }
-            };
+            public void run() {
+                _fillPlot();
+            }
+        };
 
         deferIfNecessary(doFill);
     }
 
-    /** Return whether the default is to connect
-     *  subsequent points with a line.  If the result is false, then
-     *  points are not connected.  When points are by default
-     *  connected, individual points can be not connected by giving the
-     *  appropriate argument to addPoint().  Also, a different default
-     *  can be set for each dataset, overriding this global default.
+    /**
+     * Return whether the default is to connect
+     * subsequent points with a line.  If the result is false, then
+     * points are not connected.  When points are by default
+     * connected, individual points can be not connected by giving the
+     * appropriate argument to addPoint().  Also, a different default
+     * can be set for each dataset, overriding this global default.
      */
     public boolean getConnected() {
         return _connected;
     }
 
-    /** Return whether a line will be drawn from any
-     *  plotted point down to the x axis.
-     *  A plot with such lines is also known as a stem plot.
+    /**
+     * If the argument is true, then the default is to connect
+     * subsequent points with a line.  If the argument is false, then
+     * points are not connected.  When points are by default
+     * connected, individual points can be not connected by giving the
+     * appropriate argument to addPoint().  Also, a different default
+     * can be set for each dataset, overriding this global default.
+     *
+     * @param on If true, draw lines between points.
+     * @see #setConnected(boolean, int)
+     */
+    public void setConnected(boolean on) {
+        // Ensure replot of offscreen buffer.
+        _plotImage = null;
+        _connected = on;
+    }
+
+    /**
+     * Return whether a line will be drawn from any
+     * plotted point down to the x axis.
+     * A plot with such lines is also known as a stem plot.
      */
     public boolean getImpulses() {
         return _impulses;
     }
 
-    /** Get the marks style, which is one of
-     *  "none", "points", "dots", or "various".
-     *  @return A string specifying the style for points.
+    /**
+     * If the argument is true, then a line will be drawn from any
+     * plotted point down to the x axis.  Otherwise, this feature is
+     * disabled.  A plot with such lines is also known as a stem plot.
+     *
+     * @param on If true, draw a stem plot.
+     */
+    public synchronized void setImpulses(boolean on) {
+        // Ensure replot of offscreen buffer.
+        _plotImage = null;
+        _impulses = on;
+    }
+
+    /**
+     * Get the marks style, which is one of
+     * "none", "points", "dots", or "various".
+     *
+     * @return A string specifying the style for points.
      */
     public synchronized String getMarksStyle() {
         // NOTE: If the number of marks increases, we will need to do
@@ -449,226 +590,13 @@ public class Plot extends PlotBox {
         }
     }
 
-    /** Return the maximum number of data sets.
-     *  This method is deprecated, since there is no longer an upper bound.
-     *  @deprecated
-     */
-    public int getMaxDataSets() {
-        return Integer.MAX_VALUE;
-    }
-
-    /** Return the actual number of data sets.
-     *  @return The number of data sets that have been created.
-     */
-    public synchronized int getNumDataSets() {
-        return _points.size();
-    }
-
-    /** Return false if setReuseDatasets() has not yet been called
-     *  or if setReuseDatasets(false) has been called.
-     *  @return false if setReuseDatasets() has not yet been called
-     *  or if setReuseDatasets(false) has been called.
-     *  @since Ptplot 5.3
-     *  @see #setReuseDatasets(boolean)
-     */
-    public boolean getReuseDatasets() {
-        return _reuseDatasets;
-    }
-
-    /** Override the base class to indicate that a new data set is being read.
-     *  This method is deprecated.  Use read() instead (to read the old
-     *  file format) or one of the classes in the plotml package to read
-     *  the new (XML) file format.
-     *  @deprecated
-     */
-    public void parseFile(String filespec, URL documentBase) {
-        _firstInSet = true;
-        _sawFirstDataSet = false;
-        super.parseFile(filespec, documentBase);
-    }
-
-    /** Read a file with the old syntax (non-XML).
-     *  Override the base class to register that we are reading a new
-     *  data set.
-     *  @param inputStream The input stream.
-     *  @exception IOException If the stream cannot be read.
-     */
-    public synchronized void read(InputStream inputStream)
-            throws IOException {
-        super.read(inputStream);
-        _firstInSet = true;
-        _sawFirstDataSet = false;
-    }
-
-    /** Create a sample plot.  This is not actually done immediately
-     *  unless the calling thread is the event dispatch thread.
-     *  Instead, it is deferred to the event dispatch thread.
-     *  It is important that the calling thread not hold a synchronize
-     *  lock on the Plot object, or deadlock will result (unless the
-     *  calling thread is the event dispatch thread).
-     */
-    public synchronized void samplePlot() {
-        // This needs to be done in the event thread.
-        Runnable sample = new Runnable() {
-                public void run() {
-                    synchronized (Plot.this) {
-                        // Create a sample plot.
-                        clear(true);
-
-                        setTitle("Sample plot");
-                        setYRange(-4, 4);
-                        setXRange(0, 100);
-                        setXLabel("time");
-                        setYLabel("value");
-                        addYTick("-PI", -Math.PI);
-                        addYTick("-PI/2", -Math.PI / 2);
-                        addYTick("0", 0);
-                        addYTick("PI/2", Math.PI / 2);
-                        addYTick("PI", Math.PI);
-                        setMarksStyle("none");
-                        setImpulses(true);
-
-                        boolean first = true;
-
-                        for (int i = 0; i <= 100; i++) {
-                            double xvalue = (double) i;
-
-                            // NOTE: jdk 1.3beta has a bug exhibited here.
-                            // The value of the second argument in the calls
-                            // to addPoint() below is corrupted the second
-                            // time that this method is called.  The print
-                            // statement below shows that the value is
-                            // correct before the call.
-                            // System.out.println("x value: " + xvalue);
-                            // For some bizarre reason, this problem goes
-                            // away when this code is executed in the event
-                            // dispatch thread.
-                            addPoint(0, xvalue,
-                                    5 * Math.cos((Math.PI * i) / 20), !first);
-                            addPoint(1, xvalue,
-                                    4.5 * Math.cos((Math.PI * i) / 25), !first);
-                            addPoint(2, xvalue,
-                                    4 * Math.cos((Math.PI * i) / 30), !first);
-                            addPoint(3, xvalue,
-                                    3.5 * Math.cos((Math.PI * i) / 35), !first);
-                            addPoint(4, xvalue,
-                                    3 * Math.cos((Math.PI * i) / 40), !first);
-                            addPoint(5, xvalue,
-                                    2.5 * Math.cos((Math.PI * i) / 45), !first);
-                            addPoint(6, xvalue,
-                                    2 * Math.cos((Math.PI * i) / 50), !first);
-                            addPoint(7, xvalue,
-                                    1.5 * Math.cos((Math.PI * i) / 55), !first);
-                            addPoint(8, xvalue,
-                                    1 * Math.cos((Math.PI * i) / 60), !first);
-                            addPoint(9, xvalue,
-                                    0.5 * Math.cos((Math.PI * i) / 65), !first);
-                            first = false;
-                        } // for
-                    } // synchronized
-
-                    repaint();
-                } // run method
-            }; // Runnable class
-
-        deferIfNecessary(sample);
-    }
-
-    /** Turn bars on or off (for bar charts).  Note that this is a global
-     *  property, not per dataset.
-     *  @param on If true, turn bars on.
-     */
-    public void setBars(boolean on) {
-        // Ensure replot of offscreen buffer.
-        _plotImage = null;
-        _bars = on;
-    }
-
-    /** Turn bars on and set the width and offset.  Both are specified
-     *  in units of the x axis.  The offset is the amount by which the
-     *  i < sup>th</sup> data set is shifted to the right, so that it
-     *  peeks out from behind the earlier data sets.
-     *  @param width The width of the bars.
-     *  @param offset The offset per data set.
-     */
-    public synchronized void setBars(double width, double offset) {
-        // Ensure replot of offscreen buffer.
-        _plotImage = null;
-        barWidth = width;
-        _barOffset = offset;
-        _bars = true;
-    }
-
-    /** If the argument is true, then the default is to connect
-     *  subsequent points with a line.  If the argument is false, then
-     *  points are not connected.  When points are by default
-     *  connected, individual points can be not connected by giving the
-     *  appropriate argument to addPoint().  Also, a different default
-     *  can be set for each dataset, overriding this global default.
-     *  @param on If true, draw lines between points.
-     *  @see #setConnected(boolean, int)
-     */
-    public void setConnected(boolean on) {
-        // Ensure replot of offscreen buffer.
-        _plotImage = null;
-        _connected = on;
-    }
-
-    /** If the first argument is true, then by default for the specified
-     *  dataset, points will be connected by a line.  Otherwise, the
-     *  points will not be connected. When points are by default
-     *  connected, individual points can be not connected by giving the
-     *  appropriate argument to addPoint().
-     *  Note that this method should be called before adding any points.
-     *  Note further that this method should probably be called from
-     *  the event thread.
-     *  @param on If true, draw lines between points.
-     *  @param dataset The dataset to which this should apply.
-     *  @see #setConnected(boolean)
-     */
-    public synchronized void setConnected(boolean on, int dataset) {
-        // Ensure replot of offscreen buffer.
-        _plotImage = null;
-        _checkDatasetIndex(dataset);
-
-        Format fmt = (Format) _formats.elementAt(dataset);
-        fmt.connected = on;
-        fmt.connectedUseDefault = false;
-    }
-
-    /** If the argument is true, then a line will be drawn from any
-     *  plotted point down to the x axis.  Otherwise, this feature is
-     *  disabled.  A plot with such lines is also known as a stem plot.
-     *  @param on If true, draw a stem plot.
-     */
-    public synchronized void setImpulses(boolean on) {
-        // Ensure replot of offscreen buffer.
-        _plotImage = null;
-        _impulses = on;
-    }
-
-    /** If the first argument is true, then a line will be drawn from any
-     *  plotted point in the specified dataset down to the x axis.
-     *  Otherwise, this feature is
-     *  disabled.  A plot with such lines is also known as a stem plot.
-     *  @param on If true, draw a stem plot.
-     *  @param dataset The dataset to which this should apply.
-     */
-    public synchronized void setImpulses(boolean on, int dataset) {
-        // Ensure replot of offscreen buffer.
-        _plotImage = null;
-        _checkDatasetIndex(dataset);
-
-        Format fmt = (Format) _formats.elementAt(dataset);
-        fmt.impulses = on;
-        fmt.impulsesUseDefault = false;
-    }
-
-    /** Set the marks style to "none", "points", "dots", or "various".
-     *  In the last case, unique marks are used for the first ten data
-     *  sets, then recycled.
-     *  This method should be called only from the event dispatch thread.
-     *  @param style A string specifying the style for points.
+    /**
+     * Set the marks style to "none", "points", "dots", or "various".
+     * In the last case, unique marks are used for the first ten data
+     * sets, then recycled.
+     * This method should be called only from the event dispatch thread.
+     *
+     * @param style A string specifying the style for points.
      */
     public synchronized void setMarksStyle(String style) {
         // Ensure replot of offscreen buffer.
@@ -687,12 +615,241 @@ public class Plot extends PlotBox {
         }
     }
 
-    /** Set the marks style to "none", "points", "dots", "various",
-     *  or "pixels" for the specified dataset.
-     *  In the last case, unique marks are used for the first ten data
-     *  sets, then recycled.
-     *  @param style A string specifying the style for points.
-     *  @param dataset The dataset to which this should apply.
+    /**
+     * Return the maximum number of data sets.
+     * This method is deprecated, since there is no longer an upper bound.
+     *
+     * @deprecated
+     */
+    public int getMaxDataSets() {
+        return Integer.MAX_VALUE;
+    }
+
+    /**
+     * Return the actual number of data sets.
+     *
+     * @return The number of data sets that have been created.
+     */
+    public synchronized int getNumDataSets() {
+        return _points.size();
+    }
+
+    /**
+     * Return false if setReuseDatasets() has not yet been called
+     * or if setReuseDatasets(false) has been called.
+     *
+     * @return false if setReuseDatasets() has not yet been called
+     * or if setReuseDatasets(false) has been called.
+     * @see #setReuseDatasets(boolean)
+     * @since Ptplot 5.3
+     */
+    public boolean getReuseDatasets() {
+        return _reuseDatasets;
+    }
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         protected variables               ////
+
+    /**
+     * If the argument is true, then datasets with the same name
+     * are merged into a single dataset.
+     *
+     * @param on If true, then merge datasets.
+     * @see #getReuseDatasets()
+     */
+    public void setReuseDatasets(boolean on) {
+        // Ensure replot of offscreen buffer.
+        _plotImage = null;
+        _reuseDatasets = on;
+    }
+
+    /**
+     * Override the base class to indicate that a new data set is being read.
+     * This method is deprecated.  Use read() instead (to read the old
+     * file format) or one of the classes in the plotml package to read
+     * the new (XML) file format.
+     *
+     * @deprecated
+     */
+    public void parseFile(String filespec, URL documentBase) {
+        _firstInSet = true;
+        _sawFirstDataSet = false;
+        super.parseFile(filespec, documentBase);
+    }
+
+    /**
+     * Read a file with the old syntax (non-XML).
+     * Override the base class to register that we are reading a new
+     * data set.
+     *
+     * @param inputStream The input stream.
+     * @throws IOException If the stream cannot be read.
+     */
+    public synchronized void read(InputStream inputStream)
+            throws IOException {
+        super.read(inputStream);
+        _firstInSet = true;
+        _sawFirstDataSet = false;
+    }
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         private methods                   ////
+
+    /**
+     * Create a sample plot.  This is not actually done immediately
+     * unless the calling thread is the event dispatch thread.
+     * Instead, it is deferred to the event dispatch thread.
+     * It is important that the calling thread not hold a synchronize
+     * lock on the Plot object, or deadlock will result (unless the
+     * calling thread is the event dispatch thread).
+     */
+    public synchronized void samplePlot() {
+        // This needs to be done in the event thread.
+        Runnable sample = new Runnable() {
+            public void run() {
+                synchronized (Plot.this) {
+                    // Create a sample plot.
+                    clear(true);
+
+                    setTitle("Sample plot");
+                    setYRange(-4, 4);
+                    setXRange(0, 100);
+                    setXLabel("time");
+                    setYLabel("value");
+                    addYTick("-PI", -Math.PI);
+                    addYTick("-PI/2", -Math.PI / 2);
+                    addYTick("0", 0);
+                    addYTick("PI/2", Math.PI / 2);
+                    addYTick("PI", Math.PI);
+                    setMarksStyle("none");
+                    setImpulses(true);
+
+                    boolean first = true;
+
+                    for (int i = 0; i <= 100; i++) {
+                        double xvalue = (double) i;
+
+                        // NOTE: jdk 1.3beta has a bug exhibited here.
+                        // The value of the second argument in the calls
+                        // to addPoint() below is corrupted the second
+                        // time that this method is called.  The print
+                        // statement below shows that the value is
+                        // correct before the call.
+                        // System.out.println("x value: " + xvalue);
+                        // For some bizarre reason, this problem goes
+                        // away when this code is executed in the event
+                        // dispatch thread.
+                        addPoint(0, xvalue,
+                                5 * Math.cos((Math.PI * i) / 20), !first);
+                        addPoint(1, xvalue,
+                                4.5 * Math.cos((Math.PI * i) / 25), !first);
+                        addPoint(2, xvalue,
+                                4 * Math.cos((Math.PI * i) / 30), !first);
+                        addPoint(3, xvalue,
+                                3.5 * Math.cos((Math.PI * i) / 35), !first);
+                        addPoint(4, xvalue,
+                                3 * Math.cos((Math.PI * i) / 40), !first);
+                        addPoint(5, xvalue,
+                                2.5 * Math.cos((Math.PI * i) / 45), !first);
+                        addPoint(6, xvalue,
+                                2 * Math.cos((Math.PI * i) / 50), !first);
+                        addPoint(7, xvalue,
+                                1.5 * Math.cos((Math.PI * i) / 55), !first);
+                        addPoint(8, xvalue,
+                                1 * Math.cos((Math.PI * i) / 60), !first);
+                        addPoint(9, xvalue,
+                                0.5 * Math.cos((Math.PI * i) / 65), !first);
+                        first = false;
+                    } // for
+                } // synchronized
+
+                repaint();
+            } // run method
+        }; // Runnable class
+
+        deferIfNecessary(sample);
+    }
+
+    /**
+     * Turn bars on or off (for bar charts).  Note that this is a global
+     * property, not per dataset.
+     *
+     * @param on If true, turn bars on.
+     */
+    public void setBars(boolean on) {
+        // Ensure replot of offscreen buffer.
+        _plotImage = null;
+        _bars = on;
+    }
+
+    /**
+     * Turn bars on and set the width and offset.  Both are specified
+     * in units of the x axis.  The offset is the amount by which the
+     * i < sup>th</sup> data set is shifted to the right, so that it
+     * peeks out from behind the earlier data sets.
+     *
+     * @param width  The width of the bars.
+     * @param offset The offset per data set.
+     */
+    public synchronized void setBars(double width, double offset) {
+        // Ensure replot of offscreen buffer.
+        _plotImage = null;
+        barWidth = width;
+        _barOffset = offset;
+        _bars = true;
+    }
+
+    /**
+     * If the first argument is true, then by default for the specified
+     * dataset, points will be connected by a line.  Otherwise, the
+     * points will not be connected. When points are by default
+     * connected, individual points can be not connected by giving the
+     * appropriate argument to addPoint().
+     * Note that this method should be called before adding any points.
+     * Note further that this method should probably be called from
+     * the event thread.
+     *
+     * @param on      If true, draw lines between points.
+     * @param dataset The dataset to which this should apply.
+     * @see #setConnected(boolean)
+     */
+    public synchronized void setConnected(boolean on, int dataset) {
+        // Ensure replot of offscreen buffer.
+        _plotImage = null;
+        _checkDatasetIndex(dataset);
+
+        Format fmt = (Format) _formats.elementAt(dataset);
+        fmt.connected = on;
+        fmt.connectedUseDefault = false;
+    }
+
+    /**
+     * If the first argument is true, then a line will be drawn from any
+     * plotted point in the specified dataset down to the x axis.
+     * Otherwise, this feature is
+     * disabled.  A plot with such lines is also known as a stem plot.
+     *
+     * @param on      If true, draw a stem plot.
+     * @param dataset The dataset to which this should apply.
+     */
+    public synchronized void setImpulses(boolean on, int dataset) {
+        // Ensure replot of offscreen buffer.
+        _plotImage = null;
+        _checkDatasetIndex(dataset);
+
+        Format fmt = (Format) _formats.elementAt(dataset);
+        fmt.impulses = on;
+        fmt.impulsesUseDefault = false;
+    }
+
+    /**
+     * Set the marks style to "none", "points", "dots", "various",
+     * or "pixels" for the specified dataset.
+     * In the last case, unique marks are used for the first ten data
+     * sets, then recycled.
+     *
+     * @param style   A string specifying the style for points.
+     * @param dataset The dataset to which this should apply.
      */
     public synchronized void setMarksStyle(String style, int dataset) {
         // Ensure replot of offscreen buffer.
@@ -716,11 +873,13 @@ public class Plot extends PlotBox {
         fmt.marksUseDefault = false;
     }
 
-    /** Specify the number of data sets to be plotted together.
-     *  This method is deprecated, since it is no longer necessary to
-     *  specify the number of data sets ahead of time.
-     *  @param numSets The number of data sets.
-     *  @deprecated
+    /**
+     * Specify the number of data sets to be plotted together.
+     * This method is deprecated, since it is no longer necessary to
+     * specify the number of data sets ahead of time.
+     *
+     * @param numSets The number of data sets.
+     * @deprecated
      */
     public void setNumSets(int numSets) {
         // Ensure replot of offscreen buffer.
@@ -745,21 +904,22 @@ public class Plot extends PlotBox {
         }
     }
 
-    /** Calling this method with a positive argument sets the
-     *  persistence of the plot to the given number of points.  Calling
-     *  with a zero argument turns off this feature, reverting to
-     *  infinite memory (unless sweeps persistence is set).  If both
-     *  sweeps and points persistence are set then sweeps take
-     *  precedence.
-     *  <p>
-     *  Setting the persistence greater than zero forces the plot to
-     *  be drawn in XOR mode, which allows points to be quickly and
-     *  efficiently erased.  However, there is a bug in Java (as of
-     *  version 1.3), where XOR mode does not work correctly with
-     *  double buffering.  Thus, if you call this with an argument
-     *  greater than zero, then we turn off double buffering for this
-     *  panel <i>and all of its parents</i>.  This actually happens
-     *  on the next call to addPoint().
+    /**
+     * Calling this method with a positive argument sets the
+     * persistence of the plot to the given number of points.  Calling
+     * with a zero argument turns off this feature, reverting to
+     * infinite memory (unless sweeps persistence is set).  If both
+     * sweeps and points persistence are set then sweeps take
+     * precedence.
+     * <p>
+     * Setting the persistence greater than zero forces the plot to
+     * be drawn in XOR mode, which allows points to be quickly and
+     * efficiently erased.  However, there is a bug in Java (as of
+     * version 1.3), where XOR mode does not work correctly with
+     * double buffering.  Thus, if you call this with an argument
+     * greater than zero, then we turn off double buffering for this
+     * panel <i>and all of its parents</i>.  This actually happens
+     * on the next call to addPoint().
      */
     public void setPointsPersistence(int persistence) {
         // Ensure replot of offscreen buffer.
@@ -769,34 +929,27 @@ public class Plot extends PlotBox {
         _pointsPersistence = persistence;
     }
 
-    /** If the argument is true, then datasets with the same name
-     *  are merged into a single dataset.
-     *  @param on If true, then merge datasets.
-     *  @see #getReuseDatasets()
-     */
-    public void setReuseDatasets(boolean on) {
-        // Ensure replot of offscreen buffer.
-        _plotImage = null;
-        _reuseDatasets = on;
-    }
+    ///////////////////////////////////////////////////////////////////
+    ////                         private variables                 ////
 
-    /** Calling this method with a positive argument sets the
-     *  persistence of the plot to the given width in units of the
-     *  horizontal axis. Calling
-     *  with a zero argument turns off this feature, reverting to
-     *  infinite memory (unless points persistence is set).  If both
-     *  X and points persistence are set then both are applied,
-     *  meaning that points that are old by either criterion will
-     *  be erased.
-     *  <p>
-     *  Setting the X persistence greater than zero forces the plot to
-     *  be drawn in XOR mode, which allows points to be quickly and
-     *  efficiently erased.  However, there is a bug in Java (as of
-     *  version 1.3), where XOR mode does not work correctly with
-     *  double buffering.  Thus, if you call this with an argument
-     *  greater than zero, then we turn off double buffering for this
-     *  panel <i>and all of its parents</i>.  This actually happens
-     *  on the next call to addPoint().
+    /**
+     * Calling this method with a positive argument sets the
+     * persistence of the plot to the given width in units of the
+     * horizontal axis. Calling
+     * with a zero argument turns off this feature, reverting to
+     * infinite memory (unless points persistence is set).  If both
+     * X and points persistence are set then both are applied,
+     * meaning that points that are old by either criterion will
+     * be erased.
+     * <p>
+     * Setting the X persistence greater than zero forces the plot to
+     * be drawn in XOR mode, which allows points to be quickly and
+     * efficiently erased.  However, there is a bug in Java (as of
+     * version 1.3), where XOR mode does not work correctly with
+     * double buffering.  Thus, if you call this with an argument
+     * greater than zero, then we turn off double buffering for this
+     * panel <i>and all of its parents</i>.  This actually happens
+     * on the next call to addPoint().
      */
     public void setXPersistence(double persistence) {
         // Ensure replot of offscreen buffer.
@@ -806,8 +959,10 @@ public class Plot extends PlotBox {
         _xPersistence = persistence;
     }
 
-    /** Write plot data information to the specified output stream in PlotML.
-     *  @param output A buffered print writer.
+    /**
+     * Write plot data information to the specified output stream in PlotML.
+     *
+     * @param output A buffered print writer.
      */
     public synchronized void writeData(PrintWriter output) {
         super.writeData(output);
@@ -835,25 +990,25 @@ public class Plot extends PlotBox {
 
             if (!fmt.marksUseDefault) {
                 switch (fmt.marks) {
-                case 0:
-                    options.append(" marks=\"none\"");
-                    break;
+                    case 0:
+                        options.append(" marks=\"none\"");
+                        break;
 
-                case 1:
-                    options.append(" marks=\"points\"");
-                    break;
+                    case 1:
+                        options.append(" marks=\"points\"");
+                        break;
 
-                case 2:
-                    options.append(" marks=\"dots\"");
-                    break;
+                    case 2:
+                        options.append(" marks=\"dots\"");
+                        break;
 
-                case 3:
-                    options.append(" marks=\"various\"");
-                    break;
+                    case 3:
+                        options.append(" marks=\"various\"");
+                        break;
 
-                case 4:
-                    options.append(" marks=\"pixels\"");
-                    break;
+                    case 4:
+                        options.append(" marks=\"pixels\"");
+                        break;
                 }
             }
 
@@ -891,9 +1046,11 @@ public class Plot extends PlotBox {
         }
     }
 
-    /** Write plot format information to the specified output stream in
-     *  PlotML, an XML scheme.
-     *  @param output A buffered print writer.
+    /**
+     * Write plot format information to the specified output stream in
+     * PlotML, an XML scheme.
+     *
+     * @param output A buffered print writer.
      */
     public synchronized void writeFormat(PrintWriter output) {
         super.writeFormat(output);
@@ -909,21 +1066,21 @@ public class Plot extends PlotBox {
         }
 
         switch (_marks) {
-        case 1:
-            defaults.append(" marks=\"points\"");
-            break;
+            case 1:
+                defaults.append(" marks=\"points\"");
+                break;
 
-        case 2:
-            defaults.append(" marks=\"dots\"");
-            break;
+            case 2:
+                defaults.append(" marks=\"dots\"");
+                break;
 
-        case 3:
-            defaults.append(" marks=\"various\"");
-            break;
+            case 3:
+                defaults.append(" marks=\"various\"");
+                break;
 
-        case 4:
-            defaults.append(" marks=\"pixels\"");
-            break;
+            case 4:
+                defaults.append(" marks=\"pixels\"");
+                break;
         }
 
         // Write the defaults for formats that can be controlled by dataset
@@ -941,22 +1098,21 @@ public class Plot extends PlotBox {
         }
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected methods                 ////
-
-    /** Check the argument to ensure that it is a valid data set index.
-     *  If it is less than zero, throw an IllegalArgumentException (which
-     *  is a runtime exception).  If it does not refer to an existing
-     *  data set, then fill out the _points Vector so that it does refer
-     *  to an existing data set. All other dataset-related vectors are
-     *  similarly filled out.
-     *  @param dataset The data set index.
+    /**
+     * Check the argument to ensure that it is a valid data set index.
+     * If it is less than zero, throw an IllegalArgumentException (which
+     * is a runtime exception).  If it does not refer to an existing
+     * data set, then fill out the _points Vector so that it does refer
+     * to an existing data set. All other dataset-related vectors are
+     * similarly filled out.
+     *
+     * @param dataset The data set index.
      */
     protected synchronized void _checkDatasetIndex(int dataset) {
         if (dataset < 0) {
             throw new IllegalArgumentException(
                     "Plot._checkDatasetIndex: Cannot"
-                    + " give a negative number for the data set index.");
+                            + " give a negative number for the data set index.");
         }
 
         while (dataset >= _points.size()) {
@@ -967,22 +1123,24 @@ public class Plot extends PlotBox {
         }
     }
 
-    /** Draw bar from the specified point to the y axis.
-     *  If the specified point is below the y axis or outside the
-     *  x range, do nothing.  If the <i>clip</i> argument is true,
-     *  then do not draw above the y range.
-     *  Note that paintComponent() should be called before
-     *  calling this method so that _xscale and _yscale are properly set.
-     *  This method should be called only from the event dispatch thread.
-     *  It is not synchronized, so its caller should be.
-     *  @param graphics The graphics context.
-     *  @param dataset The index of the dataset.
-     *  @param xpos The x position.
-     *  @param ypos The y position.
-     *  @param clip If true, then do not draw outside the range.
+    /**
+     * Draw bar from the specified point to the y axis.
+     * If the specified point is below the y axis or outside the
+     * x range, do nothing.  If the <i>clip</i> argument is true,
+     * then do not draw above the y range.
+     * Note that paintComponent() should be called before
+     * calling this method so that _xscale and _yscale are properly set.
+     * This method should be called only from the event dispatch thread.
+     * It is not synchronized, so its caller should be.
+     *
+     * @param graphics The graphics context.
+     * @param dataset  The index of the dataset.
+     * @param xpos     The x position.
+     * @param ypos     The y position.
+     * @param clip     If true, then do not draw outside the range.
      */
     protected void _drawBar(Graphics graphics, int dataset, long xpos,
-            long ypos, boolean clip) {
+                            long ypos, boolean clip) {
         if (clip) {
             if (ypos < _uly) {
                 ypos = _uly;
@@ -1035,21 +1193,23 @@ public class Plot extends PlotBox {
         }
     }
 
-    /** Draw an error bar for the specified yLowEB and yHighEB values.
-     *  If the specified point is below the y axis or outside the
-     *  x range, do nothing.  If the <i>clip</i> argument is true,
-     *  then do not draw above the y range.
-     *  This method should be called only from the event dispatch thread.
-     *  It is not synchronized, so its caller should be.
-     *  @param graphics The graphics context.
-     *  @param dataset The index of the dataset.
-     *  @param xpos The x position.
-     *  @param yLowEBPos The lower y position of the error bar.
-     *  @param yHighEBPos The upper y position of the error bar.
-     *  @param clip If true, then do not draw above the range.
+    /**
+     * Draw an error bar for the specified yLowEB and yHighEB values.
+     * If the specified point is below the y axis or outside the
+     * x range, do nothing.  If the <i>clip</i> argument is true,
+     * then do not draw above the y range.
+     * This method should be called only from the event dispatch thread.
+     * It is not synchronized, so its caller should be.
+     *
+     * @param graphics   The graphics context.
+     * @param dataset    The index of the dataset.
+     * @param xpos       The x position.
+     * @param yLowEBPos  The lower y position of the error bar.
+     * @param yHighEBPos The upper y position of the error bar.
+     * @param clip       If true, then do not draw above the range.
      */
     protected void _drawErrorBar(Graphics graphics, int dataset, long xpos,
-            long yLowEBPos, long yHighEBPos, boolean clip) {
+                                 long yLowEBPos, long yHighEBPos, boolean clip) {
         _drawLine(graphics, dataset, xpos - _ERRORBAR_LEG_LENGTH, yHighEBPos,
                 xpos + _ERRORBAR_LEG_LENGTH, yHighEBPos, clip);
         _drawLine(graphics, dataset, xpos, yLowEBPos, xpos, yHighEBPos, clip);
@@ -1057,19 +1217,21 @@ public class Plot extends PlotBox {
                 xpos + _ERRORBAR_LEG_LENGTH, yLowEBPos, clip);
     }
 
-    /** Draw a line from the specified point to the y axis.
-     *  If the specified point is below the y axis or outside the
-     *  x range, do nothing.  If the <i>clip</i> argument is true,
-     *  then do not draw above the y range.
-     *  This method should be called only from the event dispatch thread.
-     *  It is not synchronized, so its caller should be.
-     *  @param graphics The graphics context.
-     *  @param xpos The x position.
-     *  @param ypos The y position.
-     *  @param clip If true, then do not draw outside the range.
+    /**
+     * Draw a line from the specified point to the y axis.
+     * If the specified point is below the y axis or outside the
+     * x range, do nothing.  If the <i>clip</i> argument is true,
+     * then do not draw above the y range.
+     * This method should be called only from the event dispatch thread.
+     * It is not synchronized, so its caller should be.
+     *
+     * @param graphics The graphics context.
+     * @param xpos     The x position.
+     * @param ypos     The y position.
+     * @param clip     If true, then do not draw outside the range.
      */
     protected void _drawImpulse(Graphics graphics, long xpos, long ypos,
-            boolean clip) {
+                                boolean clip) {
         if (clip) {
             if (ypos < _uly) {
                 ypos = _uly;
@@ -1097,51 +1259,55 @@ public class Plot extends PlotBox {
         }
     }
 
-    /** Draw a line from the specified starting point to the specified
-     *  ending point.  The current color is used.  If the <i>clip</i> argument
-     *  is true, then draw only that portion of the line that lies within the
-     *  plotting rectangle. This method draws a line one pixel wide.
-     *  This method should be called only from the event dispatch thread.
-     *  It is not synchronized, so its caller should be.
-     *  @param graphics The graphics context.
-     *  @param dataset The index of the dataset.
-     *  @param startx The starting x position.
-     *  @param starty The starting y position.
-     *  @param endx The ending x position.
-     *  @param endy The ending y position.
-     *  @param clip If true, then do not draw outside the range.
+    /**
+     * Draw a line from the specified starting point to the specified
+     * ending point.  The current color is used.  If the <i>clip</i> argument
+     * is true, then draw only that portion of the line that lies within the
+     * plotting rectangle. This method draws a line one pixel wide.
+     * This method should be called only from the event dispatch thread.
+     * It is not synchronized, so its caller should be.
+     *
+     * @param graphics The graphics context.
+     * @param dataset  The index of the dataset.
+     * @param startx   The starting x position.
+     * @param starty   The starting y position.
+     * @param endx     The ending x position.
+     * @param endy     The ending y position.
+     * @param clip     If true, then do not draw outside the range.
      */
     protected void _drawLine(Graphics graphics, int dataset, long startx,
-            long starty, long endx, long endy, boolean clip) {
+                             long starty, long endx, long endy, boolean clip) {
         _drawLine(graphics, dataset, startx, starty, endx, endy, clip, 1f);
     }
 
-    /** Draw a line from the specified starting point to the specified
-     *  ending point.  The current color is used.  If the <i>clip</i> argument
-     *  is true, then draw only that portion of the line that lies within the
-     *  plotting rectangle.  The width argument is ignored if the graphics
-     *  argument is not an instance of Graphics2D.
-     *  This method should be called only from the event dispatch thread.
-     *  It is not synchronized, so its caller should be.
-     *  @param graphics The graphics context.
-     *  @param dataset The index of the dataset.
-     *  @param startx The starting x position.
-     *  @param starty The starting y position.
-     *  @param endx The ending x position.
-     *  @param endy The ending y position.
-     *  @param clip If true, then do not draw outside the range.
-     *  @param width The thickness of the line.
+    /**
+     * Draw a line from the specified starting point to the specified
+     * ending point.  The current color is used.  If the <i>clip</i> argument
+     * is true, then draw only that portion of the line that lies within the
+     * plotting rectangle.  The width argument is ignored if the graphics
+     * argument is not an instance of Graphics2D.
+     * This method should be called only from the event dispatch thread.
+     * It is not synchronized, so its caller should be.
+     *
+     * @param graphics The graphics context.
+     * @param dataset  The index of the dataset.
+     * @param startx   The starting x position.
+     * @param starty   The starting y position.
+     * @param endx     The ending x position.
+     * @param endy     The ending y position.
+     * @param clip     If true, then do not draw outside the range.
+     * @param width    The thickness of the line.
      */
     protected void _drawLine(Graphics graphics, int dataset, long startx,
-            long starty, long endx, long endy, boolean clip, float width) {
+                             long starty, long endx, long endy, boolean clip, float width) {
         _setWidth(graphics, width);
 
         if (clip) {
             // Rule out impossible cases.
             if (!(((endx <= _ulx) && (startx <= _ulx))
-                        || ((endx >= _lrx) && (startx >= _lrx))
-                        || ((endy <= _uly) && (starty <= _uly))
-                        || ((endy >= _lry) && (starty >= _lry)))) {
+                    || ((endx >= _lrx) && (startx >= _lrx))
+                    || ((endy <= _uly) && (starty <= _uly))
+                    || ((endy >= _lry) && (starty >= _lry)))) {
                 // If the end point is out of x range, adjust
                 // end point to boundary.
                 // The integer arithmetic has to be done with longs so as
@@ -1150,12 +1316,12 @@ public class Plot extends PlotBox {
                     if (endx < _ulx) {
                         endy = (int) (endy
                                 + (((long) (starty - endy) * (_ulx - endx)) / (startx
-                                           - endx)));
+                                - endx)));
                         endx = _ulx;
                     } else if (endx > _lrx) {
                         endy = (int) (endy
                                 + (((long) (starty - endy) * (_lrx - endx)) / (startx
-                                           - endx)));
+                                - endx)));
                         endx = _lrx;
                     }
                 }
@@ -1166,12 +1332,12 @@ public class Plot extends PlotBox {
                     if (endy < _uly) {
                         endx = (int) (endx
                                 + (((long) (startx - endx) * (_uly - endy)) / (starty
-                                           - endy)));
+                                - endy)));
                         endy = _uly;
                     } else if (endy > _lry) {
                         endx = (int) (endx
                                 + (((long) (startx - endx) * (_lry - endy)) / (starty
-                                           - endy)));
+                                - endy)));
                         endy = _lry;
                     }
                 }
@@ -1181,12 +1347,12 @@ public class Plot extends PlotBox {
                     if (startx < _ulx) {
                         starty = (int) (starty
                                 + (((long) (endy - starty) * (_ulx - startx)) / (endx
-                                           - startx)));
+                                - startx)));
                         startx = _ulx;
                     } else if (startx > _lrx) {
                         starty = (int) (starty
                                 + (((long) (endy - starty) * (_lrx - startx)) / (endx
-                                           - startx)));
+                                - startx)));
                         startx = _lrx;
                     }
                 }
@@ -1195,12 +1361,12 @@ public class Plot extends PlotBox {
                     if (starty < _uly) {
                         startx = (int) (startx
                                 + (((long) (endx - startx) * (_uly - starty)) / (endy
-                                           - starty)));
+                                - starty)));
                         starty = _uly;
                     } else if (starty > _lry) {
                         startx = (int) (startx
                                 + (((long) (endx - startx) * (_lry - starty)) / (endy
-                                           - starty)));
+                                - starty)));
                         starty = _lry;
                     }
                 }
@@ -1220,22 +1386,24 @@ public class Plot extends PlotBox {
         }
     }
 
-    /** Draw the axes and then plot all points. If the second
-     *  argument is true, clear the display first.
-     *  This method is called by paintComponent().
-     *  To cause it to be called you would normally call repaint(),
-     *  which eventually causes paintComponent() to be called.
-     *  <p>
-     *  Note that this is synchronized so that points are not added
-     *  by other threads while the drawing is occurring.  This method
-     *  should be called only from the event dispatch thread, consistent
-     *  with swing policy.
-     *  @param graphics The graphics context.
-     *  @param clearfirst If true, clear the plot before proceeding.
-     *  @param drawRectangle The Rectangle to draw in.
+    /**
+     * Draw the axes and then plot all points. If the second
+     * argument is true, clear the display first.
+     * This method is called by paintComponent().
+     * To cause it to be called you would normally call repaint(),
+     * which eventually causes paintComponent() to be called.
+     * <p>
+     * Note that this is synchronized so that points are not added
+     * by other threads while the drawing is occurring.  This method
+     * should be called only from the event dispatch thread, consistent
+     * with swing policy.
+     *
+     * @param graphics      The graphics context.
+     * @param clearfirst    If true, clear the plot before proceeding.
+     * @param drawRectangle The Rectangle to draw in.
      */
     protected synchronized void _drawPlot(Graphics graphics,
-            boolean clearfirst, Rectangle drawRectangle) {
+                                          boolean clearfirst, Rectangle drawRectangle) {
         // We must call PlotBox._drawPlot() before calling _drawPlotPoint
         // so that _xscale and _yscale are set.
         super._drawPlot(graphics, clearfirst, drawRectangle);
@@ -1253,25 +1421,27 @@ public class Plot extends PlotBox {
         _showing = true;
     }
 
-    /** Put a mark corresponding to the specified dataset at the
-     *  specified x and y position. The mark is drawn in the current
-     *  color. What kind of mark is drawn depends on the _marks
-     *  variable and the dataset argument. If the fourth argument is
-     *  true, then check the range and plot only points that
-     *  are in range.
-     *  This method should be called only from the event dispatch thread.
-     *  It is not synchronized, so its caller should be.
-     *  @param graphics The graphics context.
-     *  @param dataset The index of the dataset.
-     *  @param xpos The x position.
-     *  @param ypos The y position.
-     *  @param clip If true, then do not draw outside the range.
+    /**
+     * Put a mark corresponding to the specified dataset at the
+     * specified x and y position. The mark is drawn in the current
+     * color. What kind of mark is drawn depends on the _marks
+     * variable and the dataset argument. If the fourth argument is
+     * true, then check the range and plot only points that
+     * are in range.
+     * This method should be called only from the event dispatch thread.
+     * It is not synchronized, so its caller should be.
+     *
+     * @param graphics The graphics context.
+     * @param dataset  The index of the dataset.
+     * @param xpos     The x position.
+     * @param ypos     The y position.
+     * @param clip     If true, then do not draw outside the range.
      */
     protected void _drawPoint(Graphics graphics, int dataset, long xpos,
-            long ypos, boolean clip) {
+                              long ypos, boolean clip) {
         // If the point is not out of range, draw it.
         boolean pointinside = (ypos <= _lry) && (ypos >= _uly)
-            && (xpos <= _lrx) && (xpos >= _ulx);
+                && (xpos <= _lrx) && (xpos >= _ulx);
 
         if (!clip || pointinside) {
             int xposi = (int) xpos;
@@ -1299,173 +1469,175 @@ public class Plot extends PlotBox {
             } else {
                 // Color display.  Use normal legend.
                 switch (marks) {
-                case 0:
-
-                    // If no mark style is given, draw a filled rectangle.
-                    // This is used, for example, to draw the legend.
-                    graphics.fillRect(xposi - 6, yposi - 6, 6, 6);
-                    break;
-
-                case 1:
-
-                    // points -- use 3-pixel ovals.
-                    graphics.fillOval(xposi - 1, yposi - 1, 3, 3);
-                    break;
-
-                case 2:
-
-                    // dots
-                    graphics.fillOval(xposi - _radius, yposi - _radius,
-                            _diameter, _diameter);
-                    break;
-
-                case 3:
-
-                    // various
-                    int[] xpoints;
-
-                    // various
-                    int[] ypoints;
-
-                    // Points are only distinguished up to _MAX_MARKS data sets.
-                    int mark = dataset % _MAX_MARKS;
-
-                    switch (mark) {
                     case 0:
 
-                        // filled circle
-                        graphics.fillOval(xposi - _radius, yposi - _radius,
-                                _diameter, _diameter);
+                        // If no mark style is given, draw a filled rectangle.
+                        // This is used, for example, to draw the legend.
+                        graphics.fillRect(xposi - 6, yposi - 6, 6, 6);
                         break;
 
                     case 1:
 
-                        // cross
-                        graphics.drawLine(xposi - _radius, yposi - _radius,
-                                xposi + _radius, yposi + _radius);
-                        graphics.drawLine(xposi + _radius, yposi - _radius,
-                                xposi - _radius, yposi + _radius);
+                        // points -- use 3-pixel ovals.
+                        graphics.fillOval(xposi - 1, yposi - 1, 3, 3);
                         break;
 
                     case 2:
 
-                        // square
-                        graphics.drawRect(xposi - _radius, yposi - _radius,
+                        // dots
+                        graphics.fillOval(xposi - _radius, yposi - _radius,
                                 _diameter, _diameter);
                         break;
 
                     case 3:
 
-                        // filled triangle
-                        xpoints = new int[4];
-                        ypoints = new int[4];
-                        xpoints[0] = xposi;
-                        ypoints[0] = yposi - _radius;
-                        xpoints[1] = xposi + _radius;
-                        ypoints[1] = yposi + _radius;
-                        xpoints[2] = xposi - _radius;
-                        ypoints[2] = yposi + _radius;
-                        xpoints[3] = xposi;
-                        ypoints[3] = yposi - _radius;
-                        graphics.fillPolygon(xpoints, ypoints, 4);
+                        // various
+                        int[] xpoints;
+
+                        // various
+                        int[] ypoints;
+
+                        // Points are only distinguished up to _MAX_MARKS data sets.
+                        int mark = dataset % _MAX_MARKS;
+
+                        switch (mark) {
+                            case 0:
+
+                                // filled circle
+                                graphics.fillOval(xposi - _radius, yposi - _radius,
+                                        _diameter, _diameter);
+                                break;
+
+                            case 1:
+
+                                // cross
+                                graphics.drawLine(xposi - _radius, yposi - _radius,
+                                        xposi + _radius, yposi + _radius);
+                                graphics.drawLine(xposi + _radius, yposi - _radius,
+                                        xposi - _radius, yposi + _radius);
+                                break;
+
+                            case 2:
+
+                                // square
+                                graphics.drawRect(xposi - _radius, yposi - _radius,
+                                        _diameter, _diameter);
+                                break;
+
+                            case 3:
+
+                                // filled triangle
+                                xpoints = new int[4];
+                                ypoints = new int[4];
+                                xpoints[0] = xposi;
+                                ypoints[0] = yposi - _radius;
+                                xpoints[1] = xposi + _radius;
+                                ypoints[1] = yposi + _radius;
+                                xpoints[2] = xposi - _radius;
+                                ypoints[2] = yposi + _radius;
+                                xpoints[3] = xposi;
+                                ypoints[3] = yposi - _radius;
+                                graphics.fillPolygon(xpoints, ypoints, 4);
+                                break;
+
+                            case 4:
+
+                                // diamond
+                                xpoints = new int[5];
+                                ypoints = new int[5];
+                                xpoints[0] = xposi;
+                                ypoints[0] = yposi - _radius;
+                                xpoints[1] = xposi + _radius;
+                                ypoints[1] = yposi;
+                                xpoints[2] = xposi;
+                                ypoints[2] = yposi + _radius;
+                                xpoints[3] = xposi - _radius;
+                                ypoints[3] = yposi;
+                                xpoints[4] = xposi;
+                                ypoints[4] = yposi - _radius;
+                                graphics.drawPolygon(xpoints, ypoints, 5);
+                                break;
+
+                            case 5:
+
+                                // circle
+                                graphics.drawOval(xposi - _radius, yposi - _radius,
+                                        _diameter, _diameter);
+                                break;
+
+                            case 6:
+
+                                // plus sign
+                                graphics.drawLine(xposi, yposi - _radius, xposi,
+                                        yposi + _radius);
+                                graphics.drawLine(xposi - _radius, yposi,
+                                        xposi + _radius, yposi);
+                                break;
+
+                            case 7:
+
+                                // filled square
+                                graphics.fillRect(xposi - _radius, yposi - _radius,
+                                        _diameter, _diameter);
+                                break;
+
+                            case 8:
+
+                                // triangle
+                                xpoints = new int[4];
+                                ypoints = new int[4];
+                                xpoints[0] = xposi;
+                                ypoints[0] = yposi - _radius;
+                                xpoints[1] = xposi + _radius;
+                                ypoints[1] = yposi + _radius;
+                                xpoints[2] = xposi - _radius;
+                                ypoints[2] = yposi + _radius;
+                                xpoints[3] = xposi;
+                                ypoints[3] = yposi - _radius;
+                                graphics.drawPolygon(xpoints, ypoints, 4);
+                                break;
+
+                            case 9:
+
+                                // filled diamond
+                                xpoints = new int[5];
+                                ypoints = new int[5];
+                                xpoints[0] = xposi;
+                                ypoints[0] = yposi - _radius;
+                                xpoints[1] = xposi + _radius;
+                                ypoints[1] = yposi;
+                                xpoints[2] = xposi;
+                                ypoints[2] = yposi + _radius;
+                                xpoints[3] = xposi - _radius;
+                                ypoints[3] = yposi;
+                                xpoints[4] = xposi;
+                                ypoints[4] = yposi - _radius;
+                                graphics.fillPolygon(xpoints, ypoints, 5);
+                                break;
+                        }
+
                         break;
 
                     case 4:
 
-                        // diamond
-                        xpoints = new int[5];
-                        ypoints = new int[5];
-                        xpoints[0] = xposi;
-                        ypoints[0] = yposi - _radius;
-                        xpoints[1] = xposi + _radius;
-                        ypoints[1] = yposi;
-                        xpoints[2] = xposi;
-                        ypoints[2] = yposi + _radius;
-                        xpoints[3] = xposi - _radius;
-                        ypoints[3] = yposi;
-                        xpoints[4] = xposi;
-                        ypoints[4] = yposi - _radius;
-                        graphics.drawPolygon(xpoints, ypoints, 5);
+                        // If the mark style is pixels, draw a filled rectangle.
+                        graphics.fillRect(xposi, yposi, 1, 1);
                         break;
 
-                    case 5:
-
-                        // circle
-                        graphics.drawOval(xposi - _radius, yposi - _radius,
-                                _diameter, _diameter);
-                        break;
-
-                    case 6:
-
-                        // plus sign
-                        graphics.drawLine(xposi, yposi - _radius, xposi,
-                                yposi + _radius);
-                        graphics.drawLine(xposi - _radius, yposi,
-                                xposi + _radius, yposi);
-                        break;
-
-                    case 7:
-
-                        // filled square
-                        graphics.fillRect(xposi - _radius, yposi - _radius,
-                                _diameter, _diameter);
-                        break;
-
-                    case 8:
-
-                        // triangle
-                        xpoints = new int[4];
-                        ypoints = new int[4];
-                        xpoints[0] = xposi;
-                        ypoints[0] = yposi - _radius;
-                        xpoints[1] = xposi + _radius;
-                        ypoints[1] = yposi + _radius;
-                        xpoints[2] = xposi - _radius;
-                        ypoints[2] = yposi + _radius;
-                        xpoints[3] = xposi;
-                        ypoints[3] = yposi - _radius;
-                        graphics.drawPolygon(xpoints, ypoints, 4);
-                        break;
-
-                    case 9:
-
-                        // filled diamond
-                        xpoints = new int[5];
-                        ypoints = new int[5];
-                        xpoints[0] = xposi;
-                        ypoints[0] = yposi - _radius;
-                        xpoints[1] = xposi + _radius;
-                        ypoints[1] = yposi;
-                        xpoints[2] = xposi;
-                        ypoints[2] = yposi + _radius;
-                        xpoints[3] = xposi - _radius;
-                        ypoints[3] = yposi;
-                        xpoints[4] = xposi;
-                        ypoints[4] = yposi - _radius;
-                        graphics.fillPolygon(xpoints, ypoints, 5);
-                        break;
-                    }
-
-                    break;
-
-                case 4:
-
-                    // If the mark style is pixels, draw a filled rectangle.
-                    graphics.fillRect(xposi, yposi, 1, 1);
-                    break;
-
-                default:
-                    // none
+                    default:
+                        // none
                 }
             }
         }
     }
 
-    /** Parse a line that gives plotting information. Return true if
-     *  the line is recognized.  Lines with syntax errors are ignored.
-     *  It is not synchronized, so its caller should be.
-     *  @param line A command line.
-     *  @return True if the line is recognized.
+    /**
+     * Parse a line that gives plotting information. Return true if
+     * the line is recognized.  Lines with syntax errors are ignored.
+     * It is not synchronized, so its caller should be.
+     *
+     * @param line A command line.
+     * @return True if the line is recognized.
      */
     protected boolean _parseLine(String line) {
         boolean connected = false;
@@ -1732,10 +1904,12 @@ public class Plot extends PlotBox {
         return false;
     }
 
-    /** If the graphics argument is an instance of Graphics2D, then set
-     *  the current stroke to the specified width.  Otherwise, do nothing.
-     *  @param graphics The graphics object.
-     *  @param width The width.
+    /**
+     * If the graphics argument is an instance of Graphics2D, then set
+     * the current stroke to the specified width.  Otherwise, do nothing.
+     *
+     * @param graphics The graphics object.
+     * @param width    The width.
      */
     protected void _setWidth(Graphics graphics, float width) {
         // For historical reasons, the API here only assumes Graphics
@@ -1748,19 +1922,21 @@ public class Plot extends PlotBox {
                 ((Graphics2D) graphics).setStroke(_lineStroke2);
             } else {
                 ((Graphics2D) graphics).setStroke(new BasicStroke(width,
-                                                          BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+                        BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
             }
         }
     }
 
-    /** Write plot information to the specified output stream in
-     *  the "old syntax," which predates PlotML.
-     *  Derived classes should override this method to first call
-     *  the parent class method, then add whatever additional information
-     *  they wish to add to the stream.
-     *  It is not synchronized, so its caller should be.
-     *  @param output A buffered print writer.
-     *  @deprecated
+    /**
+     * Write plot information to the specified output stream in
+     * the "old syntax," which predates PlotML.
+     * Derived classes should override this method to first call
+     * the parent class method, then add whatever additional information
+     * they wish to add to the stream.
+     * It is not synchronized, so its caller should be.
+     *
+     * @param output A buffered print writer.
+     * @deprecated
      */
     protected void _writeOldSyntax(PrintWriter output) {
         super._writeOldSyntax(output);
@@ -1784,21 +1960,21 @@ public class Plot extends PlotBox {
         }
 
         switch (_marks) {
-        case 1:
-            output.println("Marks: points");
-            break;
+            case 1:
+                output.println("Marks: points");
+                break;
 
-        case 2:
-            output.println("Marks: dots");
-            break;
+            case 2:
+                output.println("Marks: dots");
+                break;
 
-        case 3:
-            output.println("Marks: various");
-            break;
+            case 3:
+                output.println("Marks: various");
+                break;
 
-        case 4:
-            output.println("Marks: pixels");
-            break;
+            case 4:
+                output.println("Marks: pixels");
+                break;
         }
 
         for (int dataset = 0; dataset < _points.size(); dataset++) {
@@ -1824,25 +2000,25 @@ public class Plot extends PlotBox {
 
             if (!fmt.marksUseDefault) {
                 switch (fmt.marks) {
-                case 0:
-                    output.println("Marks: none");
-                    break;
+                    case 0:
+                        output.println("Marks: none");
+                        break;
 
-                case 1:
-                    output.println("Marks: points");
-                    break;
+                    case 1:
+                        output.println("Marks: points");
+                        break;
 
-                case 2:
-                    output.println("Marks: dots");
-                    break;
+                    case 2:
+                        output.println("Marks: dots");
+                        break;
 
-                case 3:
-                    output.println("Marks: various");
-                    break;
+                    case 3:
+                        output.println("Marks: various");
+                        break;
 
-                case 4:
-                    output.println("Marks: pixels");
-                    break;
+                    case 4:
+                        output.println("Marks: pixels");
+                        break;
                 }
             }
 
@@ -1865,23 +2041,6 @@ public class Plot extends PlotBox {
             }
         }
     }
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         protected variables               ////
-
-    /** @serial The current dataset. */
-    protected int _currentdataset = -1;
-
-    /** @serial A vector of datasets. */
-    protected Vector _points = new Vector();
-
-    /** @serial An indicator of the marks style.  See _parseLine method for
-     * interpretation.
-     */
-    protected int _marks;
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         private methods                   ////
 
     /* Add a legend if necessary, return the value of the connected flag.
      */
@@ -1929,7 +2088,7 @@ public class Plot extends PlotBox {
      */
     /* Steven Phillips removed the "private" here */
     void _addPoint(int dataset, double x, double y, double yLowEB,
-            double yHighEB, boolean connected, boolean errorBar) {
+                   double yHighEB, boolean connected, boolean errorBar) {
         // Ensure replot of offscreen buffer.
         _plotImage = null;
 
@@ -2184,9 +2343,10 @@ public class Plot extends PlotBox {
         }
     }
 
-    /** Clear the plot of data points in the specified dataset.
-     *  This calls repaint() to request an update of the display.
-     *
+    /**
+     * Clear the plot of data points in the specified dataset.
+     * This calls repaint() to request an update of the display.
+     * <p>
      * This is not synchronized, so the caller should be.  Moreover, this
      * should only be called in the event dispatch thread. It should only
      * be called via deferIfNecessary().
@@ -2309,6 +2469,10 @@ public class Plot extends PlotBox {
             graphics.setPaintMode();
         }
     }
+
+    // The stroke to use for thin lines in the plot.
+    //private static final BasicStroke _thinStroke = new BasicStroke(
+    //        1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND);
 
     /* Erase the point at the given index in the given dataset.  If
      * lines are being drawn, also erase the line to the next points
@@ -2506,85 +2670,6 @@ public class Plot extends PlotBox {
             return fmt.connected;
         }
     }
-
-    ///////////////////////////////////////////////////////////////////
-    ////                         private variables                 ////
-
-    /** @serial Number of points to persist for. */
-    private int _pointsPersistence = 0;
-
-    /** @serial Persistence in units of the horizontal axis. */
-    private double _xPersistence = 0.0;
-
-    /** @serial True if this is a bar plot. */
-    private boolean _bars = false;
-
-    /** @serial Width of a bar in x axis units. */
-    private double barWidth = 0.5;
-
-    /** @serial Offset per dataset in x axis units. */
-    private double _barOffset = 0.05;
-
-    /** @serial True if the points are connected. */
-    private boolean _connected = true;
-
-    /** @serial True if this is an impulse plot. */
-    private boolean _impulses = false;
-
-    /** @serial The highest data set used. */
-    private int _maxDataset = -1;
-
-    /** @serial True if we saw 'reusedatasets: on' in the file. */
-    private boolean _reuseDatasets = false;
-
-    /** @serial Is this the first datapoint in a set? */
-    private boolean _firstInSet = true;
-
-    /** @serial Have we seen a DataSet line in the current data file? */
-    private boolean _sawFirstDataSet = false;
-
-    /** @serial Give the radius of a point for efficiency. */
-    private int _radius = 3;
-
-    /** @serial Give the diameter of a point for efficiency. */
-    private int _diameter = 6;
-
-    /** @serial Information about the previously plotted point. */
-    private Vector _prevx = new Vector();
-
-    /** @serial Information about the previously plotted point. */
-    private Vector _prevy = new Vector();
-
-    // Half of the length of the error bar horizontal leg length;
-    private static final int _ERRORBAR_LEG_LENGTH = 5;
-
-    // Maximum number of different marks
-    // NOTE: There are 11 colors in the base class.  Combined with 10
-    // marks, that makes 110 unique signal identities.
-    private static final int _MAX_MARKS = 10;
-
-    // A stroke of width 1.
-    private static final BasicStroke _lineStroke1 = new BasicStroke(1f,
-            BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND);
-
-    // A stroke of width 2.
-    private static final BasicStroke _lineStroke2 = new BasicStroke(2f,
-            BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND);
-
-    // The stroke to use for thin lines in the plot.
-    //private static final BasicStroke _thinStroke = new BasicStroke(
-    //        1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND);
-
-    /** @serial Flag indicating validity of _xBottom, _xTop,
-     *  _yBottom, and _yTop.
-     */
-    private boolean _xyInvalid = true;
-
-    /** @serial Set by _drawPlot(), and reset by clear(). */
-    private boolean _showing = false;
-
-    /** @serial Format information on a per data set basis. */
-    private Vector _formats = new Vector();
 
     ///////////////////////////////////////////////////////////////////
     ////                         inner classes                     ////

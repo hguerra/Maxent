@@ -31,49 +31,51 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot.plotml;
 
+import com.microstar.xml.XmlException;
+import ptolemy.plot.Plot;
+import ptolemy.plot.PlotApplet;
+
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-
-import ptolemy.plot.Plot;
-import ptolemy.plot.PlotApplet;
-
-import com.microstar.xml.XmlException;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// PlotMLApplet
 
 /**
-   An Applet that can plot data in PlotML format from a URL.
-   The URL should be specified using the dataurl applet parameter.
-
-   @author Edward A. Lee
-   @version $Id: PlotMLApplet.java,v 1.24 2005/04/29 20:05:04 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating red (eal)
-   @Pt.AcceptedRating red (cxh)
-   @see ptolemy.plot.PlotBox
-   @see ptolemy.plot.Plot
-*/
+ * An Applet that can plot data in PlotML format from a URL.
+ * The URL should be specified using the dataurl applet parameter.
+ *
+ * @author Edward A. Lee
+ * @version $Id: PlotMLApplet.java,v 1.24 2005/04/29 20:05:04 cxh Exp $
+ * @Pt.ProposedRating red (eal)
+ * @Pt.AcceptedRating red (cxh)
+ * @see ptolemy.plot.PlotBox
+ * @see ptolemy.plot.Plot
+ * @since Ptolemy II 0.4
+ */
 public class PlotMLApplet extends PlotApplet {
-    /** Return a string describing this applet.
+    /**
+     * Return a string describing this applet.
      */
     public String getAppletInfo() {
         return "PlotMLApplet 2.0: A data plotter.\n"
-            + "By: Edward A. Lee and\n " + "Christopher Hylands\n"
-            + "($Id: PlotMLApplet.java,v 1.24 2005/04/29 20:05:04 cxh Exp $)";
+                + "By: Edward A. Lee and\n " + "Christopher Hylands\n"
+                + "($Id: PlotMLApplet.java,v 1.24 2005/04/29 20:05:04 cxh Exp $)";
     }
 
     ///////////////////////////////////////////////////////////////////
     ////                         protected methods                 ////
 
-    /** Read the specified stream.  This method checks to see whether
-     *  the data is PlotML data, and if so, creates a parser to read it.
-     *  If not, it defers to the parent class to read it.
-     *  @param in The input stream.
-     *  @exception IOException If the stream cannot be read.
+    /**
+     * Read the specified stream.  This method checks to see whether
+     * the data is PlotML data, and if so, creates a parser to read it.
+     * If not, it defers to the parent class to read it.
+     *
+     * @param in The input stream.
+     * @throws IOException If the stream cannot be read.
      */
     protected void _read(InputStream in) throws IOException {
         // Create a buffered input stream so that mark and reset
@@ -101,9 +103,9 @@ public class PlotMLApplet extends PlotApplet {
                 if (ex instanceof XmlException) {
                     XmlException xmlex = (XmlException) ex;
                     msg = "PlotMLApplet: failed to parse PlotML data:\n"
-                        + "line: " + xmlex.getLine() + ", column: "
-                        + xmlex.getColumn() + "\nIn entity: "
-                        + xmlex.getSystemId() + "\n";
+                            + "line: " + xmlex.getLine() + ", column: "
+                            + xmlex.getColumn() + "\nIn entity: "
+                            + xmlex.getSystemId() + "\n";
                 } else {
                     msg = "PlotMLApplet: failed to parse PlotML data:\n";
                 }
@@ -116,8 +118,9 @@ public class PlotMLApplet extends PlotApplet {
         }
     }
 
-    /** Create a new parser object for the applet.  Derived classes can
-     *  redefine this method to return a different type of parser.
+    /**
+     * Create a new parser object for the applet.  Derived classes can
+     * redefine this method to return a different type of parser.
      */
     protected PlotMLParser _newParser() {
         return new PlotMLParser((Plot) plot());

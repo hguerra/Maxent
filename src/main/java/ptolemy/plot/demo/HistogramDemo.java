@@ -35,20 +35,21 @@ import ptolemy.plot.HistogramApplet;
 //// HistogramDemo
 
 /**
-   A Histogram demo.  Data can be given in ASCII format at a URL.
-   If none is given, then a sample histogram is generated.
-
-   @author Edward A. Lee
-   @version $Id: HistogramDemo.java,v 1.16 2005/04/25 17:19:44 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating Red (eal)
-   @Pt.AcceptedRating Red (cxh)
-*/
+ * A Histogram demo.  Data can be given in ASCII format at a URL.
+ * If none is given, then a sample histogram is generated.
+ *
+ * @author Edward A. Lee
+ * @version $Id: HistogramDemo.java,v 1.16 2005/04/25 17:19:44 cxh Exp $
+ * @Pt.ProposedRating Red (eal)
+ * @Pt.AcceptedRating Red (cxh)
+ * @since Ptolemy II 0.4
+ */
 public class HistogramDemo extends HistogramApplet {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
 
-    /** Initialize the applet.  Read the applet parameters.
+    /**
+     * Initialize the applet.  Read the applet parameters.
      */
     public void init() {
         super.init();

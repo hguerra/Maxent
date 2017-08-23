@@ -27,34 +27,35 @@ COPYRIGHTENDKEY
 */
 package ptolemy.plot.plotml;
 
-import ptolemy.plot.Histogram;
-
 import com.microstar.xml.XmlException;
+import ptolemy.plot.Histogram;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// HistogramMLParser
 
 /**
-   This class constructs a histogram from specifications
-   in PlotML (Plot Markup Language), which is an XML language.
-   This class supports extends the base class to
-   ensure that the associated plotter is an instance of Histogram.
-   It ignores unrecognized elements in the DTD.
-   The class contains an instance of the Microstar &AElig;lfred XML
-   parser and implements callback methods to interpret the parsed XML.
-   The way to use this class is to construct it with a reference to
-   a Plot object and then call its parse() method.
-
-   @author Edward A. Lee
-   @version $Id: HistogramMLParser.java,v 1.18 2005/04/25 22:52:22 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating Red (eal)
-   @Pt.AcceptedRating Red (cxh)
-*/
+ * This class constructs a histogram from specifications
+ * in PlotML (Plot Markup Language), which is an XML language.
+ * This class supports extends the base class to
+ * ensure that the associated plotter is an instance of Histogram.
+ * It ignores unrecognized elements in the DTD.
+ * The class contains an instance of the Microstar &AElig;lfred XML
+ * parser and implements callback methods to interpret the parsed XML.
+ * The way to use this class is to construct it with a reference to
+ * a Plot object and then call its parse() method.
+ *
+ * @author Edward A. Lee
+ * @version $Id: HistogramMLParser.java,v 1.18 2005/04/25 22:52:22 cxh Exp $
+ * @Pt.ProposedRating Red (eal)
+ * @Pt.AcceptedRating Red (cxh)
+ * @since Ptolemy II 0.4
+ */
 public class HistogramMLParser extends PlotMLParser {
-    /** Construct an parser to parse commands for the specified plot object.
-     *  @param plot The plot object to which to apply the commands.
+    /**
+     * Construct an parser to parse commands for the specified plot object.
+     *
+     * @param plot The plot object to which to apply the commands.
      */
     public HistogramMLParser(Histogram plot) {
         _plot = plot;
@@ -63,11 +64,13 @@ public class HistogramMLParser extends PlotMLParser {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
 
-    /** End an element. Override the base class to ignore non-histogram
-     *  operations.
-     *  &AElig;lfred will call this method at the end of each element
-     *  (including EMPTY elements).
-     *  @param elementName The element type name.
+    /**
+     * End an element. Override the base class to ignore non-histogram
+     * operations.
+     * &AElig;lfred will call this method at the end of each element
+     * (including EMPTY elements).
+     *
+     * @param elementName The element type name.
      */
     public void endElement(String elementName) throws Exception {
         if (elementName.equals("bars") || elementName.equals("dataset")) {
@@ -77,14 +80,16 @@ public class HistogramMLParser extends PlotMLParser {
         }
     }
 
-    /** Start an element.
-     *  This is called at the beginning of each XML
-     *  element.  By the time it is called, all of the attributes
-     *  for the element will already have been reported using the
-     *  attribute() method.  Unrecognized elements are ignored.
-     *  @param elementName The element type name.
-     *  @exception XmlException If the element produces an error
-     *   in constructing the model.
+    /**
+     * Start an element.
+     * This is called at the beginning of each XML
+     * element.  By the time it is called, all of the attributes
+     * for the element will already have been reported using the
+     * attribute() method.  Unrecognized elements are ignored.
+     *
+     * @param elementName The element type name.
+     * @throws XmlException If the element produces an error
+     *                      in constructing the model.
      */
     public void startElement(String elementName) throws XmlException {
         try {
@@ -115,7 +120,7 @@ public class HistogramMLParser extends PlotMLParser {
                         histogram.setBinWidth(width);
 
                         double offset = (Double.valueOf(offsetSpec))
-                            .doubleValue();
+                                .doubleValue();
                         histogram.setBinOffset(offset);
                     }
                 }
@@ -141,7 +146,7 @@ public class HistogramMLParser extends PlotMLParser {
                 throw (XmlException) ex;
             } else {
                 String msg = "XML element \"" + elementName
-                    + "\" triggers exception:\n  " + ex.toString();
+                        + "\" triggers exception:\n  " + ex.toString();
                 throw new XmlException(msg, _currentExternalEntity(),
                         _parser.getLineNumber(), _parser.getColumnNumber());
             }
@@ -155,10 +160,12 @@ public class HistogramMLParser extends PlotMLParser {
     ///////////////////////////////////////////////////////////////////
     ////                         protected methods                 ////
 
-    /** Add a point based on the current attributes.
-     *  The second argument is the element name, used for error reporting.
-     *  @param connected Ignored.
-     *  @param element The name of the element.
+    /**
+     * Add a point based on the current attributes.
+     * The second argument is the element name, used for error reporting.
+     *
+     * @param connected Ignored.
+     * @param element   The name of the element.
      */
     protected void _addPoint(boolean connected, String element)
             throws Exception {

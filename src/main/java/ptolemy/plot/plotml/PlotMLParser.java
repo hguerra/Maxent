@@ -29,53 +29,74 @@ package ptolemy.plot.plotml;
 
 
 // Ptolemy imports.
-import ptolemy.plot.Plot;
 
 import com.microstar.xml.XmlException;
+import ptolemy.plot.Plot;
 
 
 //////////////////////////////////////////////////////////////////////////
 //// PlotMLParser
 
 /**
-   This class constructs a plot from specifications
-   in PlotML (Plot Markup Language), which is an XML language.
-   This class supports extends the base class to
-   support the subset that applies to the Plot class.
-   It ignores unrecognized elements in the DTD.
-   The class contains an instance of the Microstar &AElig;lfred XML
-   parser and implements callback methods to interpret the parsed XML.
-   The way to use this class is to construct it with a reference to
-   a Plot object and then call its parse() method.
-
-   @author Edward A. Lee
-   @version $Id: PlotMLParser.java,v 1.25 2005/04/25 22:52:37 cxh Exp $
-   @since Ptolemy II 0.4
-   @Pt.ProposedRating Yellow (eal)
-   @Pt.AcceptedRating Red (cxh)
-*/
+ * This class constructs a plot from specifications
+ * in PlotML (Plot Markup Language), which is an XML language.
+ * This class supports extends the base class to
+ * support the subset that applies to the Plot class.
+ * It ignores unrecognized elements in the DTD.
+ * The class contains an instance of the Microstar &AElig;lfred XML
+ * parser and implements callback methods to interpret the parsed XML.
+ * The way to use this class is to construct it with a reference to
+ * a Plot object and then call its parse() method.
+ *
+ * @author Edward A. Lee
+ * @version $Id: PlotMLParser.java,v 1.25 2005/04/25 22:52:37 cxh Exp $
+ * @Pt.ProposedRating Yellow (eal)
+ * @Pt.AcceptedRating Red (cxh)
+ * @since Ptolemy II 0.4
+ */
 public class PlotMLParser extends PlotBoxMLParser {
-    /** Construct an parser to parse commands for the specified plot object.
-     *  @param plot The plot object to which to apply the commands.
+    /**
+     * The default connected state.
+     */
+    protected boolean _connected = true;
+    /**
+     * The current dataset number in a "dataset" element.
+     */
+    protected int _currentDataset = -1;
+
+    ///////////////////////////////////////////////////////////////////
+    ////                         public methods                    ////
+    /**
+     * A count within the current dataset, in case no x value is given.
+     */
+    protected double _currentPointCount = 0.0;
+
+    /**
+     * Construct an parser to parse commands for the specified plot object.
+     *
+     * @param plot The plot object to which to apply the commands.
      */
     public PlotMLParser(Plot plot) {
         super(plot);
     }
 
-    /** Protected constructor allows derived classes to set _plot
-     *  differently.
+    /**
+     * Protected constructor allows derived classes to set _plot
+     * differently.
      */
     protected PlotMLParser() {
     }
 
     ///////////////////////////////////////////////////////////////////
-    ////                         public methods                    ////
+    ////                         protected members                 ////
 
-    /** End an element. This method
-     *  calls the appropriate Plot methods.
-     *  &AElig;lfred will call this method at the end of each element
-     *  (including EMPTY elements).
-     *  @param elementName The element type name.
+    /**
+     * End an element. This method
+     * calls the appropriate Plot methods.
+     * &AElig;lfred will call this method at the end of each element
+     * (including EMPTY elements).
+     *
+     * @param elementName The element type name.
      */
     public void endElement(String elementName) throws Exception {
         super.endElement(elementName);
@@ -86,9 +107,10 @@ public class PlotMLParser extends PlotBoxMLParser {
         }
     }
 
-    /** Start a document.  This method is called just before the parser
-     *  attempts to read the first entity (the root of the document).
-     *  It is guaranteed that this will be the first method called.
+    /**
+     * Start a document.  This method is called just before the parser
+     * attempts to read the first entity (the root of the document).
+     * It is guaranteed that this will be the first method called.
      */
     public void startDocument() {
         super.startDocument();
@@ -96,14 +118,16 @@ public class PlotMLParser extends PlotBoxMLParser {
         _currentPointCount = 0.0;
     }
 
-    /** Start an element.
-     *  This is called at the beginning of each XML
-     *  element.  By the time it is called, all of the attributes
-     *  for the element will already have been reported using the
-     *  attribute() method.  Unrecognized elements are ignored.
-     *  @param elementName The element type name.
-     *  @exception XmlException If the element produces an error
-     *   in constructing the model.
+    /**
+     * Start an element.
+     * This is called at the beginning of each XML
+     * element.  By the time it is called, all of the attributes
+     * for the element will already have been reported using the
+     * attribute() method.  Unrecognized elements are ignored.
+     *
+     * @param elementName The element type name.
+     * @throws XmlException If the element produces an error
+     *                      in constructing the model.
      */
     public void startElement(String elementName) throws XmlException {
         try {
@@ -219,7 +243,7 @@ public class PlotMLParser extends PlotBoxMLParser {
                 ex.printStackTrace();
 
                 String msg = "XML element \"" + elementName
-                    + "\" triggers exception:\n  " + ex.toString();
+                        + "\" triggers exception:\n  " + ex.toString();
                 throw new XmlException(msg, _currentExternalEntity(),
                         _parser.getLineNumber(), _parser.getColumnNumber());
             }
@@ -231,25 +255,15 @@ public class PlotMLParser extends PlotBoxMLParser {
     }
 
     ///////////////////////////////////////////////////////////////////
-    ////                         protected members                 ////
-
-    /** The default connected state. */
-    protected boolean _connected = true;
-
-    /** The current dataset number in a "dataset" element. */
-    protected int _currentDataset = -1;
-
-    /** A count within the current dataset, in case no x value is given. */
-    protected double _currentPointCount = 0.0;
-
-    ///////////////////////////////////////////////////////////////////
     ////                         protected methods                 ////
 
-    /** Add a point based on the current attributes.
-     *  If the first argument is true, connect it to the previous point.
-     *  The second argument is the element name, used for error reporting.
-     *  @param connected If true, connect to the previous point.
-     *  @param element The name of the element.
+    /**
+     * Add a point based on the current attributes.
+     * If the first argument is true, connect it to the previous point.
+     * The second argument is the element name, used for error reporting.
+     *
+     * @param connected If true, connect to the previous point.
+     * @param element   The name of the element.
      */
     protected void _addPoint(boolean connected, String element)
             throws Exception {

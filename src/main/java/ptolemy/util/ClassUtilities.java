@@ -35,18 +35,18 @@ import java.net.URL;
 //// ClassUtilities
 
 /**
- A collection of utilities for manipulating classes.
- These utilities do not depend on any other ptolemy.* packages.
-
-
- @author Christopher Hylands
- @version $Id: ClassUtilities.java,v 1.18.2.1 2005/07/14 20:44:06 cxh Exp $
- @since Ptolemy II 4.0
- @Pt.ProposedRating Green (cxh)
- @Pt.AcceptedRating Green (cxh)
+ * A collection of utilities for manipulating classes.
+ * These utilities do not depend on any other ptolemy.* packages.
+ *
+ * @author Christopher Hylands
+ * @version $Id: ClassUtilities.java,v 1.18.2.1 2005/07/14 20:44:06 cxh Exp $
+ * @Pt.ProposedRating Green (cxh)
+ * @Pt.AcceptedRating Green (cxh)
+ * @since Ptolemy II 4.0
  */
 public class ClassUtilities {
-    /** Instances of this class cannot be created.
+    /**
+     * Instances of this class cannot be created.
      */
     private ClassUtilities() {
     }
@@ -54,34 +54,35 @@ public class ClassUtilities {
     ///////////////////////////////////////////////////////////////////
     ////                         public methods                    ////
 
-    /** Lookup a jar URL and return the resource.
-
-     *  A resource is a file such as a class file or image file that
-     *  is found in the classpath.  A jar URL is a URL that refers to
-     *  a resource in a jar file.  For example,
-     *  <code>file://./foo.jar!/a/b/c.class</code> is a jar URL that
-     *  refers to the <code>a/b/c.class</code> resource in
-     *  <code>foo.jar</code>.  If this method is called with
-     *  <code>file://./foo.jar!/a/b/c.class</code> then it will return
-     *  <code>a/b/c.class</code> if <code>a/b/c.class</code> can be
-     *  found as a resource in the class loader that loaded this class
-     *  (ptolemy.util.ClassUtilities).  If the resource cannot be found,
-     *  then an IOException is thrown. If the jarURLString parameter
-     *  does not contain <code>!/</code>, then return null.
-     *  Note that everything before the <code>!/</code> is removed before
-     *  searching the classpath.
+    /**
+     * Lookup a jar URL and return the resource.
+     * <p>
+     * A resource is a file such as a class file or image file that
+     * is found in the classpath.  A jar URL is a URL that refers to
+     * a resource in a jar file.  For example,
+     * <code>file://./foo.jar!/a/b/c.class</code> is a jar URL that
+     * refers to the <code>a/b/c.class</code> resource in
+     * <code>foo.jar</code>.  If this method is called with
+     * <code>file://./foo.jar!/a/b/c.class</code> then it will return
+     * <code>a/b/c.class</code> if <code>a/b/c.class</code> can be
+     * found as a resource in the class loader that loaded this class
+     * (ptolemy.util.ClassUtilities).  If the resource cannot be found,
+     * then an IOException is thrown. If the jarURLString parameter
+     * does not contain <code>!/</code>, then return null.
+     * Note that everything before the <code>!/</code> is removed before
+     * searching the classpath.
+     * <p>
+     * <p>This method is necessary because Web Start uses jar URL, and
+     * there are some cases where if we have a jar URL, then we may
+     * need to strip off the jar:<i>url</i>!/ part so that we can
+     * search for the {entry} as a resource.
      *
-     *  <p>This method is necessary because Web Start uses jar URL, and
-     *  there are some cases where if we have a jar URL, then we may
-     *  need to strip off the jar:<i>url</i>!/ part so that we can
-     *  search for the {entry} as a resource.
-     *
-     *  @param jarURLString The string containing the jar URL.
-     *  @return The resource, if any.If the spec string does not
-     *  contain <code>!/</code>, then return null.
-     *  @exception IOException If this method cannot convert the specification
-     *  to a URL.
-     *  @see java.net.JarURLConnection
+     * @param jarURLString The string containing the jar URL.
+     * @return The resource, if any.If the spec string does not
+     * contain <code>!/</code>, then return null.
+     * @throws IOException If this method cannot convert the specification
+     *                     to a URL.
+     * @see java.net.JarURLConnection
      */
     public static URL jarURLEntryResource(String jarURLString)
             throws IOException {
@@ -101,7 +102,7 @@ public class ClassUtilities {
                 return null;
             }
         }
-        
+
         try {
             // !/ means that this could be in a jar file.
             String entry = jarURLString.substring(jarEntry + 2);
@@ -121,15 +122,17 @@ public class ClassUtilities {
         }
     }
 
-    /** Given a dot separated classname, return the jar file or directory
-     *  where the class can be found.
-     *  @param necessaryClass  The dot separated class name, for example
-     *  "ptolemy.util.ClassUtilities"
-     *  @return If the class can be found as a resource, return the
-     *  directory or jar file where the necessary class can be found.
-     *  otherwise, return null.  If the resource is found in a directory,
-     *  then the return value will always have forward slashes, it will
-     *  never use backslashes.
+    /**
+     * Given a dot separated classname, return the jar file or directory
+     * where the class can be found.
+     *
+     * @param necessaryClass The dot separated class name, for example
+     *                       "ptolemy.util.ClassUtilities"
+     * @return If the class can be found as a resource, return the
+     * directory or jar file where the necessary class can be found.
+     * otherwise, return null.  If the resource is found in a directory,
+     * then the return value will always have forward slashes, it will
+     * never use backslashes.
      */
     public static String lookupClassAsResource(String necessaryClass) {
         // This method is called from copernicus.kernel.GeneratorAttribute
