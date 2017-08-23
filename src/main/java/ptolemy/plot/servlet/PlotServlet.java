@@ -1,22 +1,19 @@
 package ptolemy.plot.servlet;
 
+import com.microstar.xml.XmlException;
 import ptolemy.plot.Plot;
 import ptolemy.plot.plotml.PlotMLParser;
 
-import com.microstar.xml.XmlException;
-import com.sun.image.codec.jpeg.JPEGCodec;
-import com.sun.image.codec.jpeg.JPEGEncodeParam;
-import com.sun.image.codec.jpeg.JPEGImageEncoder;
-
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.*;
-
+import javax.imageio.ImageIO;
 import javax.servlet.ServletException;
-import javax.servlet.http.*;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 
 /**
@@ -115,10 +112,8 @@ public class PlotServlet extends HttpServlet {
         //graphics.fillRect(0, 0, (int)s.getWidth(), (int)s.getHeight());
         cnt.print(graphics);
 
-        JPEGImageEncoder jpegEncoder = JPEGCodec.createJPEGEncoder(out);
-        JPEGEncodeParam encodeParam = JPEGCodec.getDefaultJPEGEncodeParam(bufferedImage);
-        encodeParam.setQuality((float) 0.9, true);
-        jpegEncoder.encode(bufferedImage, encodeParam);
+        ImageIO.write(bufferedImage, "png", out);
+
         graphics.dispose();
         bufferedImage.flush();
     }
