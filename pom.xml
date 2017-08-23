@@ -17,8 +17,9 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <build.plugins.plugin.version>3.5</build.plugins.plugin.version>
         <javax.servlet.version>4.0.0</javax.servlet.version>
-        <postgresql.version>9.4.1207</postgresql.version>
+        <org.postgresql.version>42.1.4</org.postgresql.version>
         <junit.version>4.12</junit.version>
+        <edu.berkeley.eecs.ptolemy.version>1.0</edu.berkeley.eecs.ptolemy.version>
     </properties>
 
     <build>
@@ -26,9 +27,21 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>${build.plugins.plugin.version}</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>density.MaxEnt</mainClass>
+                        </manifest>
+                    </archive>
                 </configuration>
             </plugin>
         </plugins>
@@ -39,7 +52,29 @@
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>${javax.servlet.version}</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
+
+        <dependency>
+            <groupId>edu.berkeley.eecs.ptolemy</groupId>
+            <artifactId>ptolemy</artifactId>
+            <version>${edu.berkeley.eecs.ptolemy.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${org.postgresql.version}</version>
+        </dependency>
+
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>git-hguerra</id>
+            <name>PtPlot's Git based repo</name>
+            <url>https://github.com/hguerra/maxent-repo/raw/master/</url>
+        </repository>
+    </repositories>
 </project>
